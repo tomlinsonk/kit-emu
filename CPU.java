@@ -399,7 +399,13 @@ public class CPU {
      * Stack instructions
      */
 
-    private int pull() {
+     private int pop() {
+        S = (S + 1) & 0xFF;
+        int val = bus.read(0x0100 + S);
+        return val;
+    }
+
+    private int popAndIncPC() {
         S = (S + 1) & 0xFF;
         int val = bus.read(0x0100 + S);
         updateNZ(val);
@@ -408,6 +414,11 @@ public class CPU {
     }
 
     private void push(int val) {
+        bus.write(0x0100 + S, val);
+        S = (S - 1) & 0xFF;
+    }
+
+    private void pushAndIncPC(int val) {
         bus.write(0x0100 + S, val);
         S = (S - 1) & 0xFF;
         incPC();
@@ -420,7 +431,7 @@ public class CPU {
 
         @Override
         public void exec() {
-            push(A);
+            pushAndIncPC(A);
         }
     }
 
@@ -431,7 +442,7 @@ public class CPU {
 
         @Override
         public void exec() {
-            A = pull();
+            A = popAndIncPC();
         }
     }
 
@@ -442,7 +453,7 @@ public class CPU {
 
         @Override
         public void exec() {
-            push(getP() | 0b00110000);
+            pushAndIncPC(getP() | 0b00110000);
         }
     }
 
@@ -453,7 +464,7 @@ public class CPU {
 
         @Override
         public void exec() {
-            setP(pull());
+            setP(popAndIncPC());
         }
     }
 
@@ -1246,6 +1257,141 @@ public class CPU {
      * Comparison instructions
      */
 
+    abstract class CMP extends Instruction {
+        CMP(String mnemonic, CPU.AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super(mnemonic, addrMode, opcode, bytes, cycles);
+        }
+        
+        public void exec() {
+            int val = getLoadVal(this.addrMode);
+            Z = A == val;
+            C = A >= val;
+            N = ((A - val) & 0x80) > 0;
+            incPC();
+        }
+    }
+
+    class CMPImmediate extends CMP {
+        CMPImmediate() {
+            super("cmp", AddressingMode.IMMEDIATE, 0xC9, 2, 2);
+        }
+    }
+
+    class CMPZeropage extends CMP {
+        CMPZeropage() {
+            super("cmp", AddressingMode.ZEROPAGE, 0xC5, 2, 3);
+        }
+    }
+
+    class CMPZeropageX extends CMP {
+        CMPZeropageX() {
+            super("cmp", AddressingMode.ZEROPAGE_X, 0xD5, 2, 4);
+        }
+    }
+
+    class CMPAbsolute extends CMP {
+        CMPAbsolute() {
+            super("cmp", AddressingMode.ABSOLUTE, 0xCD, 3, 4);
+        }
+    }
+
+
+    class CMPAbsoluteX extends CMP {
+        CMPAbsoluteX() {
+            super("cmp", AddressingMode.ABSOLUTE_X, 0xDD, 3, 4);
+        }
+    }
+
+    class CMPAbsoluteY extends CMP {
+        CMPAbsoluteY() {
+            super("cmp", AddressingMode.ABSOLUTE_Y, 0xD9, 3, 4);
+        }
+    }
+
+    class CMPXIndirect extends CMP {
+        CMPXIndirect() {
+            super("cmp", AddressingMode.X_INDIRECT, 0xC1, 2, 6);
+        }
+    }
+
+    class CMPIndirectY extends CMP {
+        CMPIndirectY() {
+            super("cmp", AddressingMode.INDIRECT_Y, 0xD1, 2, 5);
+        }
+    }
+
+
+    abstract class CPX extends Instruction {
+        CPX(String mnemonic, CPU.AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super(mnemonic, addrMode, opcode, bytes, cycles);
+        }
+        
+        public void exec() {
+            int val = getLoadVal(this.addrMode);
+            Z = X == val;
+            C = X >= val;
+            N = ((X - val) & 0x80) > 0;
+            incPC();
+        }
+    }
+
+    class CPXImmediate extends CPX {
+        CPXImmediate() {
+            super("cpx", AddressingMode.IMMEDIATE, 0xE0, 2, 2);
+        }
+    }
+
+    class CPXZeropage extends CPX {
+        CPXZeropage() {
+            super("cpx", AddressingMode.ZEROPAGE, 0xE4, 2, 3);
+        }
+    }
+
+
+    class CPXAbsolute extends CPX {
+        CPXAbsolute() {
+            super("cpx", AddressingMode.ABSOLUTE, 0xEC, 3, 4);
+        }
+    }
+
+    abstract class CPY extends Instruction {
+        CPY(String mnemonic, CPU.AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super(mnemonic, addrMode, opcode, bytes, cycles);
+        }
+        
+        public void exec() {
+            int val = getLoadVal(this.addrMode);
+            Z = Y == val;
+            C = Y >= val;
+            N = ((Y - val) & 0x80) > 0;
+            incPC();
+        }
+    }
+
+
+    class CPYImmediate extends CPY {
+        CPYImmediate() {
+            super("cpy", AddressingMode.IMMEDIATE, 0xC0, 2, 2);
+        }
+    }
+
+    class CPYZeropage extends CPY {
+        CPYZeropage() {
+            super("cpy", AddressingMode.ZEROPAGE, 0xC4, 2, 3);
+        }
+    }
+
+
+    class CPYAbsolute extends CPY {
+        CPYAbsolute() {
+            super("cpy", AddressingMode.ABSOLUTE, 0xCC, 3, 4);
+        }
+    }
+
+
+
+
+
 
 
     /*
@@ -1257,6 +1403,26 @@ public class CPU {
         byte offset = (byte)bus.read(PC);
         if (condition) PC = (PC + offset) & 0xFFFF;
         incPC();
+    }
+
+    class BCC extends Instruction {
+        BCC() {
+            super("bcc", AddressingMode.RELATIVE, 0x90, 2, 2);
+        }
+
+        public void exec() {
+            branch(!C);
+        }
+    }
+
+    class BCS extends Instruction {
+        BCS() {
+            super("bcs", AddressingMode.RELATIVE, 0xB0, 2, 2);
+        }
+
+        public void exec() {
+            branch(C);
+        }
     }
 
     class BEQ extends Instruction {
@@ -1279,22 +1445,109 @@ public class CPU {
         }
     }
 
+    class BPL extends Instruction {
+        BPL() {
+            super("bpl", AddressingMode.RELATIVE, 0x10, 2, 2);
+        }
+
+        public void exec() {
+            branch(!N);
+        }
+    }
+
+    class BMI extends Instruction {
+        BMI() {
+            super("bmi", AddressingMode.RELATIVE, 0x30, 2, 2);
+        }
+
+        public void exec() {
+            branch(N);
+        }
+    }
+
+    class BVC extends Instruction {
+        BVC() {
+            super("bvc", AddressingMode.RELATIVE, 0x50, 2, 2);
+        }
+
+        public void exec() {
+            branch(!V);
+        }
+    }
+
+    class BVS extends Instruction {
+        BVS() {
+            super("bvs", AddressingMode.RELATIVE, 0x70, 2, 2);
+        }
+
+        public void exec() {
+            branch(V);
+        }
+    }
+
+    
+
 
 
     /*
      * Jump and subroutine instructions
      */
-    class JMPAbsolute extends Instruction {
-        JMPAbsolute() {
-            super("jmp", AddressingMode.ABSOLUTE, 0x4C, 3, 3);
+
+    abstract class JMP extends Instruction {
+        JMP(String mnemonic, CPU.AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super(mnemonic, addrMode, opcode, bytes, cycles);
         }
 
         public void exec() {
+            PC = getOperandAddress(this.addrMode);
+        }
+    }
+
+    class JMPAbsolute extends JMP {
+        JMPAbsolute() {
+            super("jmp", AddressingMode.ABSOLUTE, 0x4C, 3, 3);
+        }
+    }
+
+    class JMPIndirect extends JMP {
+        JMPIndirect() {
+            super("jmp", AddressingMode.INDIRECT, 0x6C, 3, 5);
+        }
+    }
+
+
+    class JSR extends Instruction {
+        JSR() {
+            super("jsr", AddressingMode.ABSOLUTE, 0x20, 3, 6);
+        }
+
+        @Override
+        public void exec() {
             incPC();
-            int pcLo = bus.read(PC);
+            int addrLo = bus.read(PC);
             incPC();
-            int pcHi = bus.read(PC);
-            PC = pcLo + pcHi * 0x100;
+            push(PC >> 8);
+            push(PC & 0xff);
+            int addrHi = bus.read(PC);
+            PC = addrHi * 0x100 + addrLo;
+        }
+    }
+
+    class RTS extends Instruction {
+        RTS() {
+            super("rts", AddressingMode.IMPLIED, 0x60, 1, 6);
+        }
+
+        @Override
+        public void exec() {
+            S = (S + 1) & 0xFF;
+            int val = bus.read(0x0100 + S);
+            int addrLo = val;
+            S = (S + 1) & 0xFF;
+            int val = bus.read(0x0100 + S);
+            int addrHi = val;
+            PC = addrHi * 0x100 + addrLo;
+            incPC();
         }
     }
 
@@ -1303,6 +1556,21 @@ public class CPU {
     /*
      * Interrupt instructions
      */
+
+
+    class RTI extends Instruction {
+        RTI() {
+            super("rti", AddressingMode.IMPLIED, 0x40, 1, 6);
+        }
+
+        public void exec() {
+            setP(pop());
+            int pcLo = pop();
+            int pcHi = pop();
+
+            PC = (pcHi * 0x100) + pcLo;
+        }
+    }
 
 
     /*
@@ -1370,8 +1638,12 @@ public class CPU {
             new RORAccumulator(), new RORZeropage(), new RORZeropageX(), new RORAbsolute(), new RORAbsoluteX(),
             new CLC(), new CLD(), new CLI(), new CLV(),
             new SEC(), new SED(), new SEI(),
-            new BEQ(), new BNE(), 
-            new JMPAbsolute(), 
+            new CMPImmediate(), new CMPZeropage(), new CMPZeropageX(), new CMPAbsolute(), new CMPAbsoluteX(), new CMPAbsoluteY(), new CMPXIndirect(), new CMPIndirectY(),
+            new CPXImmediate(), new CPXZeropage(), new CPXAbsolute(),
+            new CPYImmediate(), new CPYZeropage(), new CPYAbsolute(),
+            new BEQ(), new BNE(), new BCC(), new BCS(), new BMI(), new BPL(), new BVC(), new BVS(), 
+            new JMPAbsolute(), new JMPIndirect(),
+            new RTI(),
             new NOP(),
         };
 
@@ -1396,13 +1668,17 @@ public class CPU {
     }
 
     public void step() {
-        int opcode = bus.read(PC);
-        Instruction inst = this.instructions[opcode];
-        
-        assert inst != null : "Unsupported opcode " + String.format("0x%02x", opcode);
-
-        System.out.println(inst.mnemonic);
-        inst.exec();
+        if (bus.getIRQ() && !I) {
+            doIRQ(false);
+        } else {
+            int opcode = bus.read(PC);
+            Instruction inst = this.instructions[opcode];
+            
+            assert inst != null : "Unsupported opcode " + String.format("0x%02x", opcode);
+    
+            System.out.println(inst.mnemonic);
+            inst.exec();
+        }
     }
 
 
@@ -1450,9 +1726,13 @@ public class CPU {
                 addrHi = bus.read(zpAddr + 1);
                 return addrLo + addrHi * 0x100;
             case INDIRECT_Y:
-                addrLo = operand;
-                addrHi = operand + 1;
+                addrLo = bus.read(operand);
+                addrHi = bus.read(operand + 1);
                 return (addrLo + addrHi * 0x100 + Y) & 0xFFFF;
+            case INDIRECT:
+                addrLo = bus.read(operand);
+                addrHi = bus.read(operand + 1);
+                return (addrLo + addrHi * 0x100) & 0xFFFF;
             default:
                 assert false : "Invalid addressing mode " + addrMode;
                 return -1;
@@ -1485,5 +1765,24 @@ public class CPU {
         D = (P & 0b00001000) != 0;
         V = (P & 0b01000000) != 0;
         N = (P & 0b10000000) != 0;
+    }
+
+    private void doIRQ(boolean isBreak) {
+        System.out.println("IRQ!");
+        push(PC >> 8);
+        push(PC & 0xff);
+        
+        int P = getP();
+        if (isBreak) {
+            P = P | 0x10;
+        }
+
+        push(P);
+
+        int vectorLo = bus.read(0xFFFE);
+        int vectorHi = bus.read(0xFFFF);
+
+        PC = vectorHi * 0x100 + vectorLo;
+        I = true;
     }
 }
