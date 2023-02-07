@@ -1541,11 +1541,9 @@ public class CPU {
         @Override
         public void exec() {
             S = (S + 1) & 0xFF;
-            int val = bus.read(0x0100 + S);
-            int addrLo = val;
+            int addrLo = bus.read(0x0100 + S);
             S = (S + 1) & 0xFF;
-            int val = bus.read(0x0100 + S);
-            int addrHi = val;
+            int addrHi = bus.read(0x0100 + S);
             PC = addrHi * 0x100 + addrLo;
             incPC();
         }
@@ -1573,6 +1571,19 @@ public class CPU {
     }
 
 
+    class BRK extends Instruction {
+        BRK() {
+            super("brk", AddressingMode.IMPLIED, 0x00, 1, 7);
+        }
+
+        public void exec() {
+            incPC();
+            incPC();
+            doIRQ(true);
+        }
+    }
+
+
     /*
      * Other instructions
      */
@@ -1585,6 +1596,34 @@ public class CPU {
             incPC();
         }
     }
+
+    abstract class BIT extends Instruction {
+        BIT(AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super("bit", addrMode, opcode, bytes, cycles);
+        }
+
+        public void exec() {
+            int val = getLoadVal(addrMode);
+            N = (val & 0b10000000) > 0;
+            V = (val & 0b01000000) > 0;
+            Z = (val & A) > 0;
+            incPC();
+        }
+    }
+
+    class BITZeropage extends BIT {
+        BITZeropage() {
+            super(AddressingMode.ZEROPAGE, 0x24, 2, 3);
+        }
+    }
+
+    class BITAbsolute extends BIT {
+        BITAbsolute() {
+            super(AddressingMode.ABSOLUTE, 0x2C, 3, 4);
+        }
+    }
+
+
 
 
     // registers
@@ -1645,6 +1684,7 @@ public class CPU {
             new JMPAbsolute(), new JMPIndirect(),
             new RTI(),
             new NOP(),
+            new BRK()
         };
 
         this.instructions = new Instruction[0x100];
