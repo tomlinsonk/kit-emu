@@ -1606,7 +1606,7 @@ public class CPU {
             int val = getLoadVal(addrMode);
             N = (val & 0b10000000) > 0;
             V = (val & 0b01000000) > 0;
-            Z = (val & A) > 0;
+            Z = (val & A) == 0;
             incPC();
         }
     }
@@ -1684,7 +1684,8 @@ public class CPU {
             new JMPAbsolute(), new JMPIndirect(),
             new RTI(),
             new NOP(),
-            new BRK()
+            new BRK(),
+            new BITAbsolute(), new BITZeropage()
         };
 
         this.instructions = new Instruction[0x100];
