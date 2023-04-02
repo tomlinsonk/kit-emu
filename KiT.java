@@ -1,6 +1,7 @@
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.event.KeyListener;
+import java.security.Key;
 import java.awt.event.KeyEvent;
 
 public class KiT extends JPanel {
@@ -69,21 +70,36 @@ public class KiT extends JPanel {
 			public void run() {
 				
 				int i = 0;
-                while (true) {
+                long start = System.currentTimeMillis();
+
+                long currTime;
+                int prevCycleCount = 0;
+                int cycleCount = 0;
+
+                long nsElapsed;
+                while (cycleCount < 5_000_000) {
+                    currTime = System.nanoTime();
+
                     cpu.step();
-                    cpu.printStatus();
-                    i++;
-                    if (i > 10) break;
+
+                    cycleCount = cpu.getCycleCount();
+                    nsElapsed = 900 * (cycleCount - prevCycleCount);
+                    
+                    while ((System.nanoTime() - currTime) < nsElapsed) { 
+                        continue;
+                    }
+
+                    prevCycleCount = cycleCount;
+
+                    // cpu.printStatus();
+                    // i++;
+                    // if (i > 10) break;
+
+
                 }
 
-                via.keyPress(0xFF);
+                System.out.println("Time: " + (System.currentTimeMillis() - start) + "ms");
 
-                while (true) {
-                    cpu.step();
-                    cpu.printStatus();
-                    i++;
-                    if (i > 20) break;
-                }				
 			}
 		}).start();
     }
@@ -97,6 +113,7 @@ public class KiT extends JPanel {
         //     System.out.println(j + ": " + ram.get(j));
         // }
 
+        PS2.getScanCode(KeyEvent.VK_A);
         KiT kit = new KiT();
 
         JFrame frame = new JFrame("example");

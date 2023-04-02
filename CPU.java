@@ -1,3 +1,5 @@
+import javax.swing.text.DefaultEditorKit.CutAction;
+
 public class CPU {
 
     enum AddressingMode {
@@ -1645,12 +1647,16 @@ public class CPU {
 
     private Instruction[] instructions;
 
+    private int cycleCount;
+
 
     public CPU(Bus bus) {
         this.PC = 0xFFFC;
         this.A = 0;
         this.X = 0;
         this.Y = 0;
+
+        this.cycleCount = 0;
 
         this.bus = bus;
 
@@ -1700,6 +1706,10 @@ public class CPU {
         System.out.println("A: " + A + "   X: " + X + "   Y: " + Y + "   PC: " + PC + "   NV-BDIZC: " +  String.format("%8s", Integer.toBinaryString(getP())).replace(' ', '0'));
     }
 
+    public int getCycleCount() {
+        return cycleCount;
+    }
+
 
     public void reset() {
         PC = bus.read(0xFFFC) + bus.read(0xFFFD) * 0x100;
@@ -1717,7 +1727,8 @@ public class CPU {
             
             assert inst != null : "Unsupported opcode " + String.format("0x%02x", opcode);
     
-            System.out.println(inst.mnemonic);
+            // System.out.println(inst.mnemonic);
+            cycleCount += inst.cycles;
             inst.exec();
         }
     }
@@ -1809,7 +1820,7 @@ public class CPU {
     }
 
     private void doIRQ(boolean isBreak) {
-        System.out.println("IRQ!");
+        // System.out.println("IRQ!");
         push(PC >> 8);
         push(PC & 0xff);
         

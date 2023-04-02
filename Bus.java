@@ -19,7 +19,7 @@ public class Bus {
         this.addr = addr;
         this.readBit = true;
 
-        System.out.println("Read " + addr);
+        // System.out.println("Read " + addr);
 
         addrDecoder.decode(addr);
 
