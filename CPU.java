@@ -1,4 +1,3 @@
-import javax.swing.text.DefaultEditorKit.CutAction;
 
 public class CPU {
 
@@ -15,7 +14,9 @@ public class CPU {
         RELATIVE(1),
         ZEROPAGE(1),
         ZEROPAGE_X(1),
-        ZEROPAGE_Y(1);
+        ZEROPAGE_Y(1),
+        ZEROPAGE_INDIRECT(2);
+        
 
         private final int operandBytes;
 
@@ -293,28 +294,66 @@ public class CPU {
 
         @Override
         public void exec() {
+            printStatus();
             bus.write(getOperandAddress(this.addrMode), Y);
             incPC();
         } 
     }
 
-    class STYZeropage extends STX {
+    class STYZeropage extends STY {
         STYZeropage() {
             super("sty", AddressingMode.ZEROPAGE, 0x84, 2, 3);
         }
     }
 
-    class STYZeropageX extends STX {
+    class STYZeropageX extends STY {
         STYZeropageX() {
             super("sty", AddressingMode.ZEROPAGE_X, 0x94, 2, 4);
         }
     }
 
-    class STYAbsolute extends STX {
+    class STYAbsolute extends STY {
         STYAbsolute() {
             super("sty", AddressingMode.ABSOLUTE, 0x8C, 3, 4);
         }
     }
+
+    abstract class STZ extends Instruction {
+        STZ(String mnemonic, CPU.AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super(mnemonic, addrMode, opcode, bytes, cycles);
+        }
+
+        @Override
+        public void exec() {
+            bus.write(getOperandAddress(this.addrMode), 0);
+            incPC();
+        }  
+    }
+
+    class STZZeropage extends STZ {
+        STZZeropage() {
+            super("stz", AddressingMode.ZEROPAGE, 0x64, 2, 4);
+        }
+    }
+
+    class STZZeropageX extends STZ {
+        STZZeropageX() {
+            super("stz", AddressingMode.ZEROPAGE_X, 0x74, 2, 5);
+        }
+    }
+
+    class STZAbsolute extends STZ {
+        STZAbsolute() {
+            super("stz", AddressingMode.ABSOLUTE, 0x9c, 3, 5);
+        }
+    }
+
+    class STZAbsoluteX extends STZ {
+        STZAbsoluteX() {
+            super("stz", AddressingMode.ABSOLUTE_X, 0x9e, 3, 6);
+        }
+    }
+
 
 
     /*
@@ -445,6 +484,50 @@ public class CPU {
         @Override
         public void exec() {
             A = popAndIncPC();
+        }
+    }
+
+    class PHX extends Instruction {
+        PHX() {
+           super("phx", AddressingMode.IMPLIED, 0xda, 1, 3); 
+        }
+
+        @Override
+        public void exec() {
+            pushAndIncPC(X);
+        }
+    }
+
+    class PLX extends Instruction {
+        PLX() {
+           super("plx", AddressingMode.IMPLIED, 0xfa, 1, 4); 
+        }
+
+        @Override
+        public void exec() {
+            X = popAndIncPC();
+        }
+    }
+
+    class PHY extends Instruction {
+        PHY() {
+           super("phy", AddressingMode.IMPLIED, 0x5a, 1, 3); 
+        }
+
+        @Override
+        public void exec() {
+            pushAndIncPC(Y);
+        }
+    }
+
+    class PLY extends Instruction {
+        PLY() {
+           super("ply", AddressingMode.IMPLIED, 0x7a, 1, 4); 
+        }
+
+        @Override
+        public void exec() {
+            Y = popAndIncPC();
         }
     }
 
@@ -1667,8 +1750,9 @@ public class CPU {
             new STAZeropage(), new STAZeropageX(), new STAAbsolute(), new STAAbsoluteX(), new STAAbsoluteY(), new STAXIndirect(), new STAIndirectY(),
             new STXZeropage(), new STXZeropageY(), new STXAbsolute(),
             new STYZeropage(), new STYZeropageX(), new STYAbsolute(),
+            new STZZeropage(), new STZZeropageX(), new STZAbsolute(), new STZAbsoluteX(),
             new TXA(), new TYA(), new TSX(), new TAX(), new TAY(), new TXS(),
-            new PHA(), new PLA(), new PHP(), new PLP(),
+            new PHA(), new PLA(), new PHP(), new PLP(), new PHX(), new PLX(), new PHY(), new PLY(),
             new INX(), new DEX(), new INY(), new DEY(), 
             new DECZeropage(), new DECZeropageX(), new DECAbsolute(), new DECAbsoluteX(),
             new INCZeropage(), new INCZeropageX(), new INCAbsolute(), new INCAbsoluteX(),
@@ -1688,6 +1772,7 @@ public class CPU {
             new CPYImmediate(), new CPYZeropage(), new CPYAbsolute(),
             new BEQ(), new BNE(), new BCC(), new BCS(), new BMI(), new BPL(), new BVC(), new BVS(), 
             new JMPAbsolute(), new JMPIndirect(),
+            new JSR(), new RTS(),
             new RTI(),
             new NOP(),
             new BRK(),
@@ -1820,7 +1905,7 @@ public class CPU {
     }
 
     private void doIRQ(boolean isBreak) {
-        // System.out.println("IRQ!");
+        System.out.println("IRQ!");
         push(PC >> 8);
         push(PC & 0xff);
         

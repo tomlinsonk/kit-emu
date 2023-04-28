@@ -17,6 +17,7 @@ public class RAM implements BusListener {
         if (bus.readBitSet()) {
             bus.setData(this.data[bus.getAddr() - startAddr]);
         } else {
+            System.out.println("RAM WRITE " + bus.getData() + " TO " + bus.getAddr());
             this.data[bus.getAddr() - startAddr] = bus.getData();
         }
     }

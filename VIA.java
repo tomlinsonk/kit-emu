@@ -48,8 +48,9 @@ public class VIA implements Interrupter, BusListener {
         return (registers[IFR] & ANY_INT) != 0;
     }
 
-    public void keyPress(int scanCode) {
-        portAVal = scanCode;
+    public void kbByte(int val) {
+        System.out.println("VIA kb byte:" + val);
+        portAVal = val;
         
         // If CA1 interrupt is enabled
         if ((registers[IER] & CA1_INT) != 0) {
@@ -61,11 +62,13 @@ public class VIA implements Interrupter, BusListener {
     @Override
     public void activate() {
 
+        int registerAddr = bus.getAddr() - startAddr;
+        clearInterrupts(registerAddr, bus.readBitSet());
+
         if (bus.readBitSet()) {
             readPorts();
-            bus.setData(this.registers[bus.getAddr() - startAddr]);
+            bus.setData(this.registers[registerAddr]);
         } else {
-            int registerAddr = bus.getAddr() - startAddr;
             int val = bus.getData();
 
             if (registerAddr == A) {
@@ -83,9 +86,13 @@ public class VIA implements Interrupter, BusListener {
      * but only bits set as input.
      */
     private void readPorts() {
+
         // Read bits sets as input from ports into registers
         registers[A] = (portAVal & (~registers[DDRA])) | (registers[A] & registers[DDRA]);
         registers[B] = (portBVal & (~registers[DDRB])) | (registers[B] & registers[DDRB]);
+
+        System.out.println("read ports, A = " + registers[A]);
+
     }
 
     private void writePortA(int val) {
@@ -104,13 +111,37 @@ public class VIA implements Interrupter, BusListener {
         }
     }
 
+    /**
+     * Clear interrupts based on register read/write.
+     * Note: doesn't implement CA2/CB2 independent interrupt (see VIA datasheet p. 13)
+     * @param registerAddr
+     * @param isRead
+     */
+    private void clearInterrupts(int registerAddr, boolean isRead) {
+        System.out.println("clearInterrupts" +  registerAddr + ", " + isRead);
+        if (registerAddr == A) {
+            registers[IFR] &= 0b11111100;
+        } else if (registerAddr == B) {
+            registers[IFR] &= 0b11100111;
+        } else if (registerAddr == SR) {
+            registers[IFR] &= 0b11111011;
+        } else if ((registerAddr == T2C_L && isRead) || (registerAddr == T2C_H && !isRead)) {
+            registers[IFR] &= 0b11011111;
+        } else if ((registerAddr == T1L_L && isRead) || (registerAddr == T1L_H && !isRead)) {
+            registers[IFR] &= 0b10111111;
+        }
+
+        if ((registers[IFR] & 0b01111111) == 0) {
+            registers[IFR] = 0;
+        }
+    }
+
     public static void main(String[] args) {
         VIA via = new VIA(null, 0, 16);
         via.printRegisters();
 
         via.registers[IER] = CA1_INT;
 
-        via.keyPress(24);
         via.readPorts();
         // via.activate();
 

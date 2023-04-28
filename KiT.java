@@ -1,7 +1,6 @@
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.event.KeyListener;
-import java.security.Key;
 import java.awt.event.KeyEvent;
 
 public class KiT extends JPanel {
@@ -9,7 +8,7 @@ public class KiT extends JPanel {
     private final static int RAM_START = 0x0000;
     private final static int RAM_END = 0x6FFF;
 
-    private final static int ROM_START = 0x8000;
+    private final static int ROM_START = 0x9000;
     private final static int ROM_END = 0xFFFF;
 
     private final static int VIA_START = 0x7810;
@@ -29,12 +28,29 @@ public class KiT extends JPanel {
 
 			@Override
 			public void keyPressed(KeyEvent e) {
-				System.out.println("keyPressed="+KeyEvent.getKeyText(e.getKeyCode()));
+                int keyCode = e.getKeyCode();
+                if (PS2.isExtended(keyCode)) {
+                    via.kbByte(PS2.EXTENDED_CODE);
+                    kbByteDelay();
+                }
+
+                via.kbByte(PS2.getScanCode(keyCode));
 			}
 
 			@Override
 			public void keyReleased(KeyEvent e) {
-				System.out.println("keyReleased="+KeyEvent.getKeyText(e.getKeyCode()));
+                int keyCode = e.getKeyCode();
+
+                via.kbByte(PS2.RELEASE_CODE);
+                kbByteDelay();
+
+                if (PS2.isExtended(keyCode)) {
+                    via.kbByte(PS2.EXTENDED_CODE);
+                    kbByteDelay();
+                }
+
+                via.kbByte(PS2.getScanCode(keyCode));
+
 			}
 		};
 
@@ -83,7 +99,7 @@ public class KiT extends JPanel {
                     cpu.step();
 
                     cycleCount = cpu.getCycleCount();
-                    nsElapsed = 900 * (cycleCount - prevCycleCount);
+                    nsElapsed = 920 * (cycleCount - prevCycleCount);
                     
                     while ((System.nanoTime() - currTime) < nsElapsed) { 
                         continue;
@@ -100,10 +116,24 @@ public class KiT extends JPanel {
 
                 System.out.println("Time: " + (System.currentTimeMillis() - start) + "ms");
 
+                for (int j = 2; j < 6; j++) {
+                    for (int k = 0; k < 8; k++) {
+                        System.out.print(ram.get(j * 8 + k) + "\t");
+                        
+                    }
+                    System.out.println();
+                }
 			}
 		}).start();
     }
 
+    private void kbByteDelay() {
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    } 
 
     public static void main(String[] args) {
         
