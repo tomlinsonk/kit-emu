@@ -24,6 +24,7 @@ public class KiT extends JPanel {
     private final static int VIA2_START = 0x7900;
     private final static int VIA2_END = 0x790F;
 
+    private final static int ROM_HIDDEN_START = 0x8000;
     private final static int ROM_START = 0x9000;
     private final static int ROM_END = 0xFFFF;
 
@@ -33,6 +34,8 @@ public class KiT extends JPanel {
     private RAM ram;
     private ROM rom;
     private VIA via1;
+    private VIA via2;
+
     private Graphics graphics;
 
     public KiT() {
@@ -44,8 +47,10 @@ public class KiT extends JPanel {
         bus = new Bus();
         cpu = new CPU(bus);
         ram = new RAM(bus, RAM_START, RAM_END);
-        rom = new ROM(bus, ROM_START, ROM_END);
+        rom = new ROM(bus, ROM_HIDDEN_START, ROM_END);
         via1 = new VIA(bus, VIA1_START, VIA1_END);
+        via2 = new VIA(bus, VIA2_START, VIA2_END);
+
         graphics = new Graphics(bus, VRAM_START, VRAM_END);
 
         AddressDecoder addrDecoder = new AddressDecoder();
@@ -53,10 +58,12 @@ public class KiT extends JPanel {
         addrDecoder.addDevice(ram, RAM_START, RAM_END);
         addrDecoder.addDevice(rom, ROM_START, ROM_END);
         addrDecoder.addDevice(via1, VIA1_START, VIA1_END);
+        addrDecoder.addDevice(via2, VIA2_START, VIA2_END);
         addrDecoder.addDevice(graphics, VRAM_START, VRAM_END);
 
         bus.setAddressDecoder(addrDecoder);
         bus.addInterrupter(via1);
+        bus.addInterrupter(via2);
 
         cpu.reset();
         cpu.printStatus();
@@ -105,6 +112,9 @@ public class KiT extends JPanel {
                 int prevCycleCount = 0;
                 int cycleCount = 0;
 
+                long checkpointTime = 0;
+                long checkpointCycles = 0;
+
                 long nsElapsed;
                 while (true) {
                     currTime = System.nanoTime();
@@ -112,7 +122,7 @@ public class KiT extends JPanel {
                     cpu.step();
 
                     cycleCount = cpu.getCycleCount();
-                    nsElapsed = 920 * (cycleCount - prevCycleCount);
+                    nsElapsed = 495 * (cycleCount - prevCycleCount);
                     
                     while ((System.nanoTime() - currTime) < nsElapsed) { 
                         continue;
@@ -123,6 +133,12 @@ public class KiT extends JPanel {
                     // cpu.printStatus();
                     // i++;
                     // if (i > 10) break;
+
+                    if (currTime - checkpointTime > 2_000_000_000) {
+                        System.out.println(((cycleCount - checkpointCycles) / 2_000_000.0) + " MHz");
+                        checkpointTime = currTime;
+                        checkpointCycles = cycleCount;
+                    }
                 }
 			}
 		}).start();

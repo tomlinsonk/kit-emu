@@ -2,7 +2,6 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import javax.imageio.ImageIO;
@@ -18,7 +17,6 @@ public class Graphics implements BusListener {
     private static final int RED = (new Color(234, 50, 35)).getRGB(); 
 
     private int vramStartAddr;
-    private int vramEndAddr;
     private AtomicIntegerArray vram;
 
     private BufferedImage img;
@@ -28,7 +26,6 @@ public class Graphics implements BusListener {
     public Graphics(Bus bus, int vramStartAddr, int vramEndAddr) {
         this.bus = bus;
         this.vramStartAddr = vramStartAddr;
-        this.vramEndAddr = vramEndAddr;
 
         this.vram = new AtomicIntegerArray(vramEndAddr - vramStartAddr + 1);
         this.img = new BufferedImage(SCREEN_WIDTH, SCREEN_HEIGHT, BufferedImage.TYPE_INT_RGB);
