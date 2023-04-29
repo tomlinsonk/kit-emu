@@ -1,99 +1,112 @@
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 
 public class KiT extends JPanel {
 
     private final static int RAM_START = 0x0000;
-    private final static int RAM_END = 0x6FFF;
+    private final static int RAM_END = 0x5FFF;
+
+    private final static int VRAM_START = 0x6000;
+    private final static int VRAM_END = 0x77FF;
+
+    private final static int VIA1_START = 0x7810;
+    private final static int VIA1_END = 0x781F;
+
+    private final static int VIA2_START = 0x7900;
+    private final static int VIA2_END = 0x790F;
 
     private final static int ROM_START = 0x9000;
     private final static int ROM_END = 0xFFFF;
 
-    private final static int VIA_START = 0x7810;
-    private final static int VIA_END = 0x781F;
 
     private Bus bus;
     private CPU cpu;
     private RAM ram;
     private ROM rom;
-    private VIA via;
+    private VIA via1;
+    private Graphics graphics;
 
     public KiT() {
-        KeyListener listener = new KeyListener() {
-			@Override
-			public void keyTyped(KeyEvent e) {
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-                int keyCode = e.getKeyCode();
-                if (PS2.isExtended(keyCode)) {
-                    via.kbByte(PS2.EXTENDED_CODE);
-                    kbByteDelay();
-                }
-
-                via.kbByte(PS2.getScanCode(keyCode));
-			}
-
-			@Override
-			public void keyReleased(KeyEvent e) {
-                int keyCode = e.getKeyCode();
-
-                via.kbByte(PS2.RELEASE_CODE);
-                kbByteDelay();
-
-                if (PS2.isExtended(keyCode)) {
-                    via.kbByte(PS2.EXTENDED_CODE);
-                    kbByteDelay();
-                }
-
-                via.kbByte(PS2.getScanCode(keyCode));
-
-			}
-		};
+        KeyListener listener = new PS2KeyListender();
 
 		addKeyListener(listener);
 		setFocusable(true);
-
 
         bus = new Bus();
         cpu = new CPU(bus);
         ram = new RAM(bus, RAM_START, RAM_END);
         rom = new ROM(bus, ROM_START, ROM_END);
-        via = new VIA(bus, VIA_START, VIA_END);
+        via1 = new VIA(bus, VIA1_START, VIA1_END);
+        graphics = new Graphics(bus, VRAM_START, VRAM_END);
 
         AddressDecoder addrDecoder = new AddressDecoder();
 
         addrDecoder.addDevice(ram, RAM_START, RAM_END);
         addrDecoder.addDevice(rom, ROM_START, ROM_END);
-        addrDecoder.addDevice(via, VIA_START, VIA_END);
+        addrDecoder.addDevice(via1, VIA1_START, VIA1_END);
+        addrDecoder.addDevice(graphics, VRAM_START, VRAM_END);
 
         bus.setAddressDecoder(addrDecoder);
-        bus.addInterrupter(via);
+        bus.addInterrupter(via1);
 
         cpu.reset();
         cpu.printStatus();
 
-        init();
+        run();
     }
 
-    private void init() {
+    private class PS2KeyListender implements KeyListener {
+        @Override
+        public void keyTyped(KeyEvent e) {
+        }
+
+        @Override
+        public void keyPressed(KeyEvent e) {
+            int keyCode = e.getKeyCode();
+            if (PS2.isExtended(keyCode)) {
+                via1.kbByte(PS2.EXTENDED_CODE);
+                kbByteDelay();
+            }
+
+            via1.kbByte(PS2.getScanCode(keyCode));
+        }
+
+        @Override
+        public void keyReleased(KeyEvent e) {
+            int keyCode = e.getKeyCode();
+
+            via1.kbByte(PS2.RELEASE_CODE);
+            kbByteDelay();
+
+            if (PS2.isExtended(keyCode)) {
+                via1.kbByte(PS2.EXTENDED_CODE);
+                kbByteDelay();
+            }
+
+            via1.kbByte(PS2.getScanCode(keyCode));
+
+        }
+    }
+
+    private void run() {
         new Thread(new Runnable() {
-			
 			@Override
 			public void run() {
-				
-				int i = 0;
-                long start = System.currentTimeMillis();
-
-                long currTime;
+				long currTime;
                 int prevCycleCount = 0;
                 int cycleCount = 0;
 
                 long nsElapsed;
-                while (cycleCount < 5_000_000) {
+                while (true) {
                     currTime = System.nanoTime();
 
                     cpu.step();
@@ -110,18 +123,6 @@ public class KiT extends JPanel {
                     // cpu.printStatus();
                     // i++;
                     // if (i > 10) break;
-
-
-                }
-
-                System.out.println("Time: " + (System.currentTimeMillis() - start) + "ms");
-
-                for (int j = 2; j < 6; j++) {
-                    for (int k = 0; k < 8; k++) {
-                        System.out.print(ram.get(j * 8 + k) + "\t");
-                        
-                    }
-                    System.out.println();
                 }
 			}
 		}).start();
@@ -135,6 +136,11 @@ public class KiT extends JPanel {
         }
     } 
 
+    public BufferedImage getDisplayImage() {
+        graphics.updateImage();
+        return graphics.getImage();
+    }
+
     public static void main(String[] args) {
         
 
@@ -146,13 +152,48 @@ public class KiT extends JPanel {
         PS2.getScanCode(KeyEvent.VK_A);
         KiT kit = new KiT();
 
-        JFrame frame = new JFrame("example");
+
+        JFrame frame = new JFrame("KiT Emulator");
         
-        frame.add(kit);
-        
-        frame.setSize(300,300);
-        frame.setLayout(null);
+
+        kit.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        JLabel label = new JLabel();
+        kit.add(label, gbc);
+
+        frame.setContentPane(kit);
+
+        frame.setSize(1200, 900);
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+
+        // Display update thread
+        new Thread(new Runnable() {
+			@Override
+			public void run() {
+                BufferedImage resized = new BufferedImage(1024, 768, BufferedImage.TYPE_INT_RGB);
+                ImageIcon image;
+                Graphics2D g2d;
+
+                while (true) {
+                    g2d = resized.createGraphics();
+                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+                    g2d.drawImage(kit.getDisplayImage(), 0, 0, 1024, 768, null);
+                    g2d.dispose();
+
+                    image = new ImageIcon(resized);
+                    label.setIcon(image);
+
+                    try {
+                        Thread.sleep(16);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } 
+            }
+		}).start();
     }   
 }

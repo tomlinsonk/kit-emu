@@ -42,7 +42,7 @@ public class AddressDecoder {
             }
         }
 
-        assert false;
+        assert false: "Can't decode address $" + Integer.toHexString(addr);
     }
 
     

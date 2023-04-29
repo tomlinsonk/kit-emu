@@ -682,6 +682,18 @@ public class CPU {
         }
     }
 
+    class INCImplied extends Instruction {
+        INCImplied() {
+            super("inc", AddressingMode.IMPLIED, 0x1A, 1, 2);
+        }
+
+        public void exec() {
+            A = (A + 1) & 0xFF;
+            updateNZ(A);
+            incPC();
+        }
+    }
+
 
 
     /*
@@ -1755,7 +1767,7 @@ public class CPU {
             new PHA(), new PLA(), new PHP(), new PLP(), new PHX(), new PLX(), new PHY(), new PLY(),
             new INX(), new DEX(), new INY(), new DEY(), 
             new DECZeropage(), new DECZeropageX(), new DECAbsolute(), new DECAbsoluteX(),
-            new INCZeropage(), new INCZeropageX(), new INCAbsolute(), new INCAbsoluteX(),
+            new INCZeropage(), new INCZeropageX(), new INCAbsolute(), new INCAbsoluteX(), new INCImplied(),
             new ADCImmediate(), new ADCZeropage(), new ADCZeropageX(), new ADCAbsolute(), new ADCAbsoluteX(), new ADCAbsoluteY(), new ADCXIndirect(), new ADCIndirectY(),
             new SBCImmediate(), new SBCZeropage(), new SBCZeropageX(), new SBCAbsolute(), new SBCAbsoluteX(), new SBCAbsoluteY(), new SBCXIndirect(), new SBCIndirectY(),
             new ANDImmediate(), new ANDZeropage(), new ANDZeropageX(), new ANDAbsolute(), new ANDAbsoluteX(), new ANDAbsoluteY(), new ANDXIndirect(), new ANDIndirectY(),
