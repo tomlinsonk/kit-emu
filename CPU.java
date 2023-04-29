@@ -1582,6 +1582,16 @@ public class CPU {
         }
     }
 
+    class BRA extends Instruction {
+        BRA() {
+            super("bra", AddressingMode.RELATIVE, 0x80, 2, 3);
+        }
+
+        public void exec() {
+            branch(true);
+        }
+    }
+
     
 
 
@@ -1720,8 +1730,277 @@ public class CPU {
         }
     }
 
+    class BITImmediate extends Instruction {
+        BITImmediate() {
+            super("bit", AddressingMode.IMMEDIATE, 0x89, 2, 2);
+        }
+
+        public void exec() {
+            int val = getLoadVal(addrMode);
+            Z = (val & A) == 0;
+            incPC();
+        }
+    }
 
 
+    /**
+     * 65C02 bit instructions
+     */
+    class BBR extends Instruction {
+        private int mask;
+
+        BBR(int bit, int opcode) {
+            super("bbr" + bit, AddressingMode.ZEROPAGE, opcode, 3, 5);
+            mask = 0b00000001 << bit;
+        }
+
+        public void exec() {
+            incPC();
+            int zpAddr = bus.read(PC);
+            branch((mask & bus.read(zpAddr)) == 0);
+        }
+    }
+
+    class BBR0 extends BBR {
+        BBR0() {
+            super(0, 0x0F);
+        }
+    }
+
+    class BBR1 extends BBR {
+        BBR1() {
+            super(1, 0x1F);
+        }
+    }
+
+    class BBR2 extends BBR {
+        BBR2() {
+            super(2, 0x2F);
+        }
+    }
+
+    class BBR3 extends BBR {
+        BBR3() {
+            super(3, 0x3F);
+        }
+    }
+
+    class BBR4 extends BBR {
+        BBR4() {
+            super(4, 0x4F);
+        }
+    }
+
+    class BBR5 extends BBR {
+        BBR5() {
+            super(5, 0x5F);
+        }
+    }
+
+    class BBR6 extends BBR {
+        BBR6() {
+            super(6, 0x6F);
+        }
+    }
+
+    class BBR7 extends BBR {
+        BBR7() {
+            super(7, 0x7F);
+        }
+    }
+
+    class BBS extends Instruction {
+        private int mask;
+
+        BBS(int bit, int opcode) {
+            super("bbs" + bit, AddressingMode.ZEROPAGE, opcode, 3, 5);
+            mask = 0b00000001 << bit;
+        }
+
+        public void exec() {
+            incPC();
+            int zpAddr = bus.read(PC);
+            branch((mask & bus.read(zpAddr)) != 0);
+        }
+    }
+
+    class BBS0 extends BBS {
+        BBS0() {
+            super(0, 0x8F);
+        }
+    }
+
+    class BBS1 extends BBS {
+        BBS1() {
+            super(1, 0x9F);
+        }
+    }
+
+    class BBS2 extends BBS {
+        BBS2() {
+            super(2, 0xAF);
+        }
+    }
+
+    class BBS3 extends BBS {
+        BBS3() {
+            super(3, 0xBF);
+        }
+    }
+
+    class BBS4 extends BBS {
+        BBS4() {
+            super(4, 0xCF);
+        }
+    }
+
+    class BBS5 extends BBS {
+        BBS5() {
+            super(5, 0xDF);
+        }
+    }
+
+    class BBS6 extends BBS {
+        BBS6() {
+            super(6, 0xEF);
+        }
+    }
+
+    class BBS7 extends BBS {
+        BBS7() {
+            super(7, 0xFF);
+        }
+    }
+
+    class RMB extends Instruction {
+        private int mask;
+
+        RMB(int bit, int opcode) {
+            super("rmb" + bit, AddressingMode.ZEROPAGE, opcode, 2, 5);
+            mask = ~(0b00000001 << bit);
+        }
+
+        public void exec() {
+            incPC();
+            int zpAddr = bus.read(PC);
+            int val = bus.read(zpAddr) & mask;
+            bus.write(zpAddr, val);
+            incPC();
+        }
+    }
+
+    class RMB0 extends RMB {
+        RMB0() {
+            super(0, 0x07);
+        }
+    }
+
+    class RMB1 extends RMB {
+        RMB1() {
+            super(1, 0x17);
+        }
+    }
+
+    class RMB2 extends RMB {
+        RMB2() {
+            super(2, 0x27);
+        }
+    }
+
+    class RMB3 extends RMB {
+        RMB3() {
+            super(3, 0x37);
+        }
+    }
+
+    class RMB4 extends RMB {
+        RMB4() {
+            super(4, 0x47);
+        }
+    }
+
+    class RMB5 extends RMB {
+        RMB5() {
+            super(5, 0x57);
+        }
+    }
+
+    class RMB6 extends RMB {
+        RMB6() {
+            super(6, 0x67);
+        }
+    }
+
+    class RMB7 extends RMB {
+        RMB7() {
+            super(7, 0x77);
+        }
+    }
+
+    class SMB extends Instruction {
+        private int mask;
+
+        SMB(int bit, int opcode) {
+            super("smb" + bit, AddressingMode.ZEROPAGE, opcode, 2, 5);
+            mask = 0b00000001 << bit;
+        }
+
+        public void exec() {
+            incPC();
+            int zpAddr = bus.read(PC);
+            int val = bus.read(zpAddr) | mask;
+            bus.write(zpAddr, val);
+            incPC();
+        }
+    }
+
+    class SMB0 extends SMB {
+        SMB0() {
+            super(0, 0x87);
+        }
+    }
+
+    class SMB1 extends SMB {
+        SMB1() {
+            super(1, 0x97);
+        }
+    }
+
+    class SMB2 extends SMB {
+        SMB2() {
+            super(2, 0xA7);
+        }
+    }
+
+    class SMB3 extends SMB {
+        SMB3() {
+            super(3, 0xB7);
+        }
+    }
+
+    class SMB4 extends SMB {
+        SMB4() {
+            super(4, 0xC7);
+        }
+    }
+
+    class SMB5 extends SMB {
+        SMB5() {
+            super(5, 0xD7);
+        }
+    }
+
+    class SMB6 extends SMB {
+        SMB6() {
+            super(6, 0xE7);
+        }
+    }
+
+    class SMB7 extends SMB {
+        SMB7() {
+            super(7, 0xF7);
+        }
+    }
 
     // registers
     private int PC;
@@ -1782,13 +2061,17 @@ public class CPU {
             new CMPImmediate(), new CMPZeropage(), new CMPZeropageX(), new CMPAbsolute(), new CMPAbsoluteX(), new CMPAbsoluteY(), new CMPXIndirect(), new CMPIndirectY(),
             new CPXImmediate(), new CPXZeropage(), new CPXAbsolute(),
             new CPYImmediate(), new CPYZeropage(), new CPYAbsolute(),
-            new BEQ(), new BNE(), new BCC(), new BCS(), new BMI(), new BPL(), new BVC(), new BVS(), 
+            new BEQ(), new BNE(), new BCC(), new BCS(), new BMI(), new BPL(), new BVC(), new BVS(), new BRA(),
             new JMPAbsolute(), new JMPIndirect(),
             new JSR(), new RTS(),
             new RTI(),
             new NOP(),
             new BRK(),
-            new BITAbsolute(), new BITZeropage()
+            new BITAbsolute(), new BITZeropage(), new BITImmediate(),
+            new BBR0(), new BBR1(), new BBR2(), new BBR3(), new BBR4(), new BBR5(), new BBR6(), new BBR7(),
+            new BBS0(), new BBS1(), new BBS2(), new BBS3(), new BBS4(), new BBS5(), new BBS6(), new BBS7(),
+            new RMB0(), new RMB1(), new RMB2(), new RMB3(), new RMB4(), new RMB5(), new RMB6(), new RMB7(),
+            new SMB0(), new SMB1(), new SMB2(), new SMB3(), new SMB4(), new SMB5(), new SMB6(), new SMB7(),
         };
 
         this.instructions = new Instruction[0x100];

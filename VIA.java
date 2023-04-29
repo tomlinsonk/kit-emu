@@ -91,7 +91,7 @@ public class VIA implements Interrupter, BusListener {
         registers[A] = (portAVal & (~registers[DDRA])) | (registers[A] & registers[DDRA]);
         registers[B] = (portBVal & (~registers[DDRB])) | (registers[B] & registers[DDRB]);
 
-        System.out.println("read ports, A = " + registers[A]);
+        // System.out.println("read ports, A = " + registers[A]);
 
     }
 
@@ -118,7 +118,7 @@ public class VIA implements Interrupter, BusListener {
      * @param isRead
      */
     private void clearInterrupts(int registerAddr, boolean isRead) {
-        System.out.println("clearInterrupts" +  registerAddr + ", " + isRead);
+        // System.out.println("clearInterrupts" +  registerAddr + ", " + isRead);
         if (registerAddr == A) {
             registers[IFR] &= 0b11111100;
         } else if (registerAddr == B) {
