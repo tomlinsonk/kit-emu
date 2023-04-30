@@ -28,7 +28,7 @@ public class KiT extends JPanel {
     private final static int UART_END = 0x7A0F;
 
     private final static int SID_START = 0x7E00;
-    private final static int SID_END = 0x7E0F;
+    private final static int SID_END = 0x7EFF;
 
     private final static int SSD_START = 0x8000;
     private final static int SSD_END = 0x8FFF;
@@ -70,7 +70,7 @@ public class KiT extends JPanel {
         sid = new SID(bus, SID_START, SID_END);
         ssd = new SSD(bus, via2, SSD_START, SSD_END);
 
-        graphics = new Graphics(bus, VRAM_START, VRAM_END);
+        graphics = new Graphics(bus, via2, VRAM_START, VRAM_END);
 
         AddressDecoder addrDecoder = new AddressDecoder();
 
