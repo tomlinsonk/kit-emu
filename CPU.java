@@ -294,7 +294,6 @@ public class CPU {
 
         @Override
         public void exec() {
-            printStatus();
             bus.write(getOperandAddress(this.addrMode), Y);
             incPC();
         } 
@@ -2021,7 +2020,7 @@ public class CPU {
 
     private Instruction[] instructions;
 
-    private int cycleCount;
+    private long cycleCount;
 
 
     public CPU(Bus bus) {
@@ -2086,7 +2085,7 @@ public class CPU {
         System.out.println("A: " + A + "   X: " + X + "   Y: " + Y + "   PC: " + PC + "   NV-BDIZC: " +  String.format("%8s", Integer.toBinaryString(getP())).replace(' ', '0'));
     }
 
-    public int getCycleCount() {
+    public long getCycleCount() {
         return cycleCount;
     }
 
@@ -2200,7 +2199,7 @@ public class CPU {
     }
 
     private void doIRQ(boolean isBreak) {
-        System.out.println("IRQ!");
+        // System.out.println("IRQ!");
         push(PC >> 8);
         push(PC & 0xff);
         

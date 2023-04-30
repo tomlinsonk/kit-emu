@@ -16,7 +16,9 @@ public class ROM implements BusListener {
 
         byte[] romData;
         try {
-            romData = Files.readAllBytes(Paths.get("/Users/tomlinsonk/projects/6502/6502-software/roms/emu-test/emu-test.bin"));
+            // romData = Files.readAllBytes(Paths.get("/Users/tomlinsonk/projects/6502/6502-software/roms/emu-test/emu-test.bin"));
+            romData = Files.readAllBytes(Paths.get("/Users/tomlinsonk/projects/6502/6502-software/roms/video-mon/video_mon.bin"));
+
             for (int i = 0; i < romData.length; i++) {
                 this.data[i] = romData[i] & 0xFF;
             }

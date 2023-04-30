@@ -1,4 +1,2 @@
-- Implement timer 1 and timer 2 for VIAs
-- Implement dummy UART and SID so address decoding doesn't crash
 - Implement SSD (need command sequences)
 - Implement other video modes (CG1 first, then RG1)
