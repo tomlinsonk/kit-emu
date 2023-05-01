@@ -2095,6 +2095,7 @@ public class CPU {
         I = false;
         D = false;
         S = 0xFF;
+        cycleCount = 0;
     }
 
     public void step() {

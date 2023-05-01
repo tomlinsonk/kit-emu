@@ -56,6 +56,8 @@ public class VIA implements Interrupter, BusListener {
         this.t2Counter = 0;
         this.t1Counting = false;
         this.t2Counting = false;
+        this.portAVal = 0;
+        this.portBVal = 0;
     }
 
     @Override
@@ -205,17 +207,28 @@ public class VIA implements Interrupter, BusListener {
         return registers[B];
     }
 
-    public static void main(String[] args) {
-        VIA via = new VIA(null, 0, 16);
-        via.printRegisters();
-
-        via.registers[IER] = CA1_INT;
-
-        // via.readPorts();
-        // via.activate();
-
-        via.printRegisters();
-
+    public void reset() {
+        this.registers = new int[16];
+        this.cycleCount = 0; 
+        this.t1Counter = 0;
+        this.t2Counter = 0;
+        this.t1Counting = false;
+        this.t2Counting = false;
+        this.portAVal = 0;
+        this.portBVal = 0;
     }
+
+    // public static void main(String[] args) {
+    //     VIA via = new VIA(null, 0, 16);
+    //     via.printRegisters();
+
+    //     via.registers[IER] = CA1_INT;
+
+    //     // via.readPorts();
+    //     // via.activate();
+
+    //     via.printRegisters();
+
+    // }
     
 }

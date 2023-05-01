@@ -24,7 +24,12 @@ public class Graphics implements BusListener {
         {YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW},
         {BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE},
         {RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED}
-    };       
+    };
+    
+    private static final int[][] RG1_PIXELS = {
+        {DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN},
+        {GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN}
+    };   
 
 
     private static final int MODE_TEXT = 0b00000000;
@@ -78,7 +83,6 @@ public class Graphics implements BusListener {
 
         int videoMode = via.getPortA();
 
-
         if (videoMode == MODE_TEXT) {
             for (int row = 0; row < 16; row++) {
                 for (int col = 0; col < 32; col++) {
@@ -100,6 +104,21 @@ public class Graphics implements BusListener {
                 img.setRGB((i % 16) * 16 + 4, (i / 16) * 3, 4, 3, CG1_PIXELS[(vramByte >> 4) & 0b00000011], 0, 1);
                 img.setRGB((i % 16) * 16 + 8, (i / 16) * 3, 4, 3, CG1_PIXELS[(vramByte >> 2) & 0b00000011], 0, 1);
                 img.setRGB((i % 16) * 16 + 12, (i / 16) * 3, 4, 3, CG1_PIXELS[vramByte & 0b00000011], 0, 1);
+            }
+        } else if (videoMode == MODE_RG1) {
+            int vramByte;
+            for (int i = 0; i < 1024; i++) {
+                vramByte = vram.get(i);
+
+                img.setRGB((i % 16) * 16, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 7) & 1], 0, 1);
+                img.setRGB((i % 16) * 16 + 2, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 6) & 1], 0, 1);
+                img.setRGB((i % 16) * 16 + 4, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 5) & 1], 0, 1);
+                img.setRGB((i % 16) * 16 + 6, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 4) & 1], 0, 1);
+                img.setRGB((i % 16) * 16 + 8, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 3) & 1], 0, 1);
+                img.setRGB((i % 16) * 16 + 10, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 2) & 1], 0, 1);
+                img.setRGB((i % 16) * 16 + 12, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 1) & 1], 0, 1);
+                img.setRGB((i % 16) * 16 + 14, (i / 16) * 3, 2, 3, RG1_PIXELS[vramByte & 1], 0, 1);
+
             }
         }
         

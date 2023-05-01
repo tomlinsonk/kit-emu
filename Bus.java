@@ -5,6 +5,7 @@ public class Bus {
     private int data;
     private int addr;
     private boolean readBit; 
+    private boolean resetLine;
     private AddressDecoder addrDecoder;
     private ArrayList<Interrupter> interrupters;
     
@@ -13,6 +14,7 @@ public class Bus {
         this.addr = 0;
         this.readBit = true;
         this.interrupters = new ArrayList<Interrupter>();
+        this.resetLine = false;
     }
 
     public int read(int addr) {

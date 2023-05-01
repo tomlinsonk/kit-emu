@@ -1,4 +1,5 @@
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -8,6 +9,8 @@ import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
 public class KiT extends JPanel {
@@ -50,8 +53,11 @@ public class KiT extends JPanel {
     private UART uart;
     private SID sid;
 
+    private boolean doReset;
 
     private Graphics graphics;
+
+    private JLabel clockLabel;
 
     public KiT() {
         KeyListener listener = new PS2KeyListender();
@@ -89,8 +95,6 @@ public class KiT extends JPanel {
 
         cpu.reset();
         // cpu.printStatus();
-
-        run();
     }
 
     private class PS2KeyListender implements KeyListener {
@@ -140,6 +144,16 @@ public class KiT extends JPanel {
 
                 long nsElapsed;
                 while (true) {
+                    if (doReset) {
+                        via1.reset();
+                        via2.reset();
+                        cpu.reset();
+                        doReset = false;
+                        prevCycleCount = 0;
+                        checkpointTime = 0;
+                        checkpointCycles = 0;
+                    }
+
                     currTime = System.nanoTime();
 
                     cpu.step();
@@ -161,7 +175,8 @@ public class KiT extends JPanel {
                     // if (i > 10) break;
 
                     if (currTime - checkpointTime > 2_000_000_000) {
-                        System.out.println(((cycleCount - checkpointCycles) / 2_000_000.0) + " MHz");
+                        clockLabel.setText(String.format("%.2f MHz", ((cycleCount - checkpointCycles) / 2_000_000.0)));
+                        
                         checkpointTime = currTime;
                         checkpointCycles = cycleCount;
                     }
@@ -183,6 +198,15 @@ public class KiT extends JPanel {
         return graphics.getImage();
     }
 
+    public void reset() {
+        doReset = true;
+        requestFocus();
+    }
+
+    public void setClockLabel(JLabel label) {
+        clockLabel = label;
+    }
+
     public static void main(String[] args) {
         
 
@@ -194,15 +218,36 @@ public class KiT extends JPanel {
         PS2.getScanCode(KeyEvent.VK_A);
         KiT kit = new KiT();
 
-
         JFrame frame = new JFrame("KiT Emulator");
-        
-
+    
         kit.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
 
         JLabel label = new JLabel();
         kit.add(label, gbc);
+
+        JPanel controlPanel = new JPanel(new GridBagLayout());
+        JButton resetButton = new JButton("Reset");  
+        resetButton.setBounds(0,0,95,30);  
+        resetButton.addActionListener(new ActionListener() {  
+            public void actionPerformed(ActionEvent e){  
+                kit.reset();            
+            }  
+        });  
+        controlPanel.add(resetButton, gbc);
+
+        JLabel clockLabel = new JLabel();
+        gbc.gridy = 1;
+        controlPanel.add(clockLabel, gbc);
+
+
+        gbc.gridy = 0;
+        kit.add(controlPanel, gbc);
+        kit.setClockLabel(clockLabel);
+        
+
+
+
 
         frame.setContentPane(kit);
 
@@ -211,6 +256,7 @@ public class KiT extends JPanel {
         frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        kit.run();
 
         // Display update thread
         new Thread(new Runnable() {
