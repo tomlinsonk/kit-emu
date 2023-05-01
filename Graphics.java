@@ -27,9 +27,11 @@ public class Graphics implements BusListener {
     };
     
     private static final int[][] RG1_PIXELS = {
-        {DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN},
-        {GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN}
-    };   
+        {DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN},
+        {GREEN, GREEN, GREEN, GREEN, GREEN, GREEN}
+    };
+    
+    private static final int[] RG_COLORS = {DARK_GREEN, GREEN};
 
 
     private static final int MODE_TEXT = 0b00000000;
@@ -83,19 +85,7 @@ public class Graphics implements BusListener {
 
         int videoMode = via.getPortA();
 
-        if (videoMode == MODE_TEXT) {
-            for (int row = 0; row < 16; row++) {
-                for (int col = 0; col < 32; col++) {
-                    int[][] character = charSet[vram.get(row * 32 + col)];
-    
-                    for (int x = 0; x < 8; x++) {
-                        for (int y = 0; y < 12; y++) {
-                            img.setRGB(col * 8 + x, row * 12 + y, character[y][x]);
-                        }
-                    }
-                }
-            }
-        } else if (videoMode == MODE_CG1) {
+        if (videoMode == MODE_CG1) {
             int vramByte;
             for (int i = 0; i < 1024; i++) {
                 vramByte = vram.get(i);
@@ -119,6 +109,34 @@ public class Graphics implements BusListener {
                 img.setRGB((i % 16) * 16 + 12, (i / 16) * 3, 2, 3, RG1_PIXELS[(vramByte >> 1) & 1], 0, 1);
                 img.setRGB((i % 16) * 16 + 14, (i / 16) * 3, 2, 3, RG1_PIXELS[vramByte & 1], 0, 1);
 
+            }
+        } else if (videoMode == MODE_RG6) {
+            int vramByte;
+            for (int i = 0; i < 6144; i++) {
+                vramByte = vram.get(i);
+
+                img.setRGB((i % 32) * 8, i / 32, RG_COLORS[(vramByte >> 7) & 1]);
+                img.setRGB((i % 32) * 8 + 1, i / 32, RG_COLORS[(vramByte >> 6) & 1]);
+                img.setRGB((i % 32) * 8 + 2, i / 32, RG_COLORS[(vramByte >> 5) & 1]);
+                img.setRGB((i % 32) * 8 + 3, i / 32, RG_COLORS[(vramByte >> 4) & 1]);
+                img.setRGB((i % 32) * 8 + 4, i / 32, RG_COLORS[(vramByte >> 3) & 1]);
+                img.setRGB((i % 32) * 8 + 5, i / 32, RG_COLORS[(vramByte >> 2) & 1]);
+                img.setRGB((i % 32) * 8 + 6, i / 32, RG_COLORS[(vramByte >> 1) & 1]);
+                img.setRGB((i % 32) * 8 + 7, i / 32, RG_COLORS[vramByte & 1]);
+
+            }
+        } else {
+            // Default to text mode
+            for (int row = 0; row < 16; row++) {
+                for (int col = 0; col < 32; col++) {
+                    int[][] character = charSet[vram.get(row * 32 + col)];
+    
+                    for (int x = 0; x < 8; x++) {
+                        for (int y = 0; y < 12; y++) {
+                            img.setRGB(col * 8 + x, row * 12 + y, character[y][x]);
+                        }
+                    }
+                }
             }
         }
         
