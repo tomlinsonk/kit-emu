@@ -643,6 +643,19 @@ public class CPU {
         }
     }
 
+    class DECImplied extends Instruction {
+        DECImplied() {
+            super("dec", AddressingMode.IMPLIED, 0x3A, 1, 2);
+        }
+
+        public void exec() {
+            A = (A - 1) & 0xFF;
+            updateNZ(A);
+            incPC();
+        }
+    }
+
+
     abstract class INC extends Instruction {
         INC(String mnemonic, CPU.AddressingMode addrMode, int opcode, int bytes, int cycles) {
             super(mnemonic, addrMode, opcode, bytes, cycles);
@@ -2044,7 +2057,7 @@ public class CPU {
             new TXA(), new TYA(), new TSX(), new TAX(), new TAY(), new TXS(),
             new PHA(), new PLA(), new PHP(), new PLP(), new PHX(), new PLX(), new PHY(), new PLY(),
             new INX(), new DEX(), new INY(), new DEY(), 
-            new DECZeropage(), new DECZeropageX(), new DECAbsolute(), new DECAbsoluteX(),
+            new DECZeropage(), new DECZeropageX(), new DECAbsolute(), new DECAbsoluteX(), new DECImplied(),
             new INCZeropage(), new INCZeropageX(), new INCAbsolute(), new INCAbsoluteX(), new INCImplied(),
             new ADCImmediate(), new ADCZeropage(), new ADCZeropageX(), new ADCAbsolute(), new ADCAbsoluteX(), new ADCAbsoluteY(), new ADCXIndirect(), new ADCIndirectY(),
             new SBCImmediate(), new SBCZeropage(), new SBCZeropageX(), new SBCAbsolute(), new SBCAbsoluteX(), new SBCAbsoluteY(), new SBCXIndirect(), new SBCIndirectY(),

@@ -200,7 +200,7 @@ public class KiT extends JPanel {
 
     public void reset() {
         doReset = true;
-        requestFocus();
+        // requestFocus();
     }
 
     public void setClockLabel(JLabel label) {
@@ -228,6 +228,7 @@ public class KiT extends JPanel {
 
         JPanel controlPanel = new JPanel(new GridBagLayout());
         JButton resetButton = new JButton("Reset");  
+        resetButton.setFocusable(false);
         resetButton.setBounds(0,0,95,30);  
         resetButton.addActionListener(new ActionListener() {  
             public void actionPerformed(ActionEvent e){  
@@ -245,9 +246,6 @@ public class KiT extends JPanel {
         kit.add(controlPanel, gbc);
         kit.setClockLabel(clockLabel);
         
-
-
-
 
         frame.setContentPane(kit);
 
