@@ -1,10 +1,15 @@
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -27,8 +32,8 @@ public class KiT extends JPanel {
     private final static int VIA2_START = 0x7900;
     private final static int VIA2_END = 0x790F;
 
-    private final static int UART_START = 0x7A00;
-    private final static int UART_END = 0x7A0F;
+    private final static int UART_START = 0x7A20;
+    private final static int UART_END = 0x7A2F;
 
     private final static int SID_START = 0x7E00;
     private final static int SID_END = 0x7EFF;
@@ -58,6 +63,7 @@ public class KiT extends JPanel {
     private Graphics graphics;
 
     private JLabel clockLabel;
+    private boolean turboMode;
 
     public KiT() {
         KeyListener listener = new PS2KeyListender();
@@ -92,6 +98,8 @@ public class KiT extends JPanel {
         bus.setAddressDecoder(addrDecoder);
         bus.addInterrupter(via1);
         bus.addInterrupter(via2);
+
+        turboMode = false;
 
         cpu.reset();
         // cpu.printStatus();
@@ -160,19 +168,18 @@ public class KiT extends JPanel {
 
                     cycleCount = cpu.getCycleCount();
                     newCycles = (int)(cycleCount - prevCycleCount);
-                    nsElapsed = 495 * newCycles;
+                    nsElapsed = 480 * newCycles;
                     
-                    while ((System.nanoTime() - currTime) < nsElapsed) { 
-                        continue;
+                    if (!turboMode) {
+                        while ((System.nanoTime() - currTime) < nsElapsed) { 
+                            continue;
+                        }
                     }
 
                     prevCycleCount = cycleCount;
 
                     via1.updateCycleCount(newCycles);
                     via2.updateCycleCount(newCycles);
-                    // cpu.printStatus();
-                    // i++;
-                    // if (i > 10) break;
 
                     if (currTime - checkpointTime > 2_000_000_000) {
                         clockLabel.setText(String.format("%.2f MHz", ((cycleCount - checkpointCycles) / 2_000_000.0)));
@@ -200,11 +207,46 @@ public class KiT extends JPanel {
 
     public void reset() {
         doReset = true;
-        // requestFocus();
     }
 
     public void setClockLabel(JLabel label) {
         clockLabel = label;
+    }
+
+    public void setTurboMode(boolean val) {
+        turboMode = val;
+    }
+
+    public static void addSpeedButtons(JPanel controlPanel, KiT kit) {
+        JRadioButton slowButton = new JRadioButton("Realtime");
+        slowButton.setSelected(true);
+        slowButton.setFocusable(false);
+
+        JRadioButton fastButton = new JRadioButton("Turbo");
+        fastButton.setFocusable(false);
+
+        //Group the radio buttons.
+        ButtonGroup group = new ButtonGroup();
+        group.add(slowButton);
+        group.add(fastButton);
+
+        ActionListener listener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                kit.setTurboMode(e.getActionCommand().equals("Turbo"));
+            }
+        };
+
+        // Register a listener for the radio buttons.
+        slowButton.addActionListener(listener);
+        fastButton.addActionListener(listener);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        gbc.anchor =  GridBagConstraints.WEST;
+        gbc.gridy = 3;
+        controlPanel.add(slowButton, gbc);
+        gbc.gridy = 4;
+        controlPanel.add(fastButton, gbc);
     }
 
     public static void main(String[] args) {
@@ -241,12 +283,30 @@ public class KiT extends JPanel {
         gbc.gridy = 1;
         controlPanel.add(clockLabel, gbc);
 
+        JButton loadButton = new JButton("Load");
+        loadButton.setFocusable(false);
+        loadButton.setBounds(0,0,95,30);  
+        loadButton.addActionListener(new ActionListener() {  
+            public void actionPerformed(ActionEvent e){  
+                JFileChooser chooser= new JFileChooser("/Users/tomlinsonk/projects/6502/6502-software/prgs");
+
+                int choice = chooser.showOpenDialog(null);
+
+                if (choice != JFileChooser.APPROVE_OPTION) return;
+
+                File chosenFile = chooser.getSelectedFile(); 
+                System.out.println(chosenFile.getAbsolutePath());           
+            }  
+        });  
+        gbc.gridy = 5;
+        controlPanel.add(loadButton, gbc);
+
+        addSpeedButtons(controlPanel, kit);
 
         gbc.gridy = 0;
         kit.add(controlPanel, gbc);
         kit.setClockLabel(clockLabel);
         
-
         frame.setContentPane(kit);
 
         frame.setSize(1200, 900);
