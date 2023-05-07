@@ -79,7 +79,7 @@ public class VIA implements Interrupter, BusListener {
     @Override
     public void activate() {
 
-        int registerAddr = bus.getAddr() - startAddr;
+        int registerAddr = bus.getAddr() & 0x0F;
         clearInterrupts(registerAddr, bus.readBitSet());
 
         if (bus.readBitSet()) {

@@ -26,14 +26,14 @@ public class KiT extends JPanel {
     private final static int VRAM_START = 0x6000;
     private final static int VRAM_END = 0x77FF;
 
-    private final static int VIA1_START = 0x7810;
-    private final static int VIA1_END = 0x781F;
+    private final static int VIA1_START = 0x7800;
+    private final static int VIA1_END = 0x78FF;
 
     private final static int VIA2_START = 0x7900;
-    private final static int VIA2_END = 0x790F;
+    private final static int VIA2_END = 0x79FF;
 
-    private final static int UART_START = 0x7A20;
-    private final static int UART_END = 0x7A2F;
+    private final static int UART_START = 0x7A00;
+    private final static int UART_END = 0x7AFF;
 
     private final static int SID_START = 0x7E00;
     private final static int SID_END = 0x7EFF;
@@ -217,6 +217,10 @@ public class KiT extends JPanel {
         turboMode = val;
     }
 
+    public void startLoad(File f) {
+        uart.startLoad(f);
+    }
+
     public static void addSpeedButtons(JPanel controlPanel, KiT kit) {
         JRadioButton slowButton = new JRadioButton("Realtime");
         slowButton.setSelected(true);
@@ -295,7 +299,8 @@ public class KiT extends JPanel {
                 if (choice != JFileChooser.APPROVE_OPTION) return;
 
                 File chosenFile = chooser.getSelectedFile(); 
-                System.out.println(chosenFile.getAbsolutePath());           
+                // System.out.println(chosenFile.getAbsolutePath());
+                kit.startLoad(chosenFile);
             }  
         });  
         gbc.gridy = 5;
@@ -341,5 +346,8 @@ public class KiT extends JPanel {
                 } 
             }
 		}).start();
+
+
+        // kit.startLoad(new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/mandelbrot/mandelbrot.prg"));
     }   
 }

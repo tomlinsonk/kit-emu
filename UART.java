@@ -1,3 +1,6 @@
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,8 +21,8 @@ public class UART implements BusListener {
 
     private int[] registers;
 
-
-    private AtomicInteger rxData;
+    private int[] loadData;
+    private int loadIndex;
 
     UART(Bus bus, int startAddr, int endAddr) {
         this.bus = bus;
@@ -29,28 +32,72 @@ public class UART implements BusListener {
         registers = new int[8];
         readCount = 0;
 
-        registers[RBR] = 5;
         registers[LSR] = DATA_READY | THR_EMPTY;
+
+        loadIndex = 0;
+        loadData = null;
     }
 
     @Override
     public void activate() {
         // System.out.println(Integer.toHexString(bus.getAddr()));
 
-        int addr = bus.getAddr() - startAddr;
+        int addr = bus.getAddr() & 0x0F;
 
         if (bus.readBitSet()) {
+            if (addr == RBR && loadData != null && loadIndex < loadData.length) {
+                registers[RBR] = loadData[loadIndex];
+                System.out.println(loadData[loadIndex]);
+                loadIndex++;
+            } 
+
             bus.setData(registers[addr]);
-            readCount ++;
-            // System.out.println("Read " + addr + " " + readCount);
-            // try {
-            //     Thread.sleep(5);
-            // } catch (InterruptedException e) {
-            //     // TODO Auto-generated catch block
-            //     e.printStackTrace();
-            // }
         } else {
             // System.out.println("Write " + bus.getData() + " " + addr);
+        }
+    }
+
+    public void startLoad(File f) {
+        // TODO: send header: filetype, video mode, fize size, checksum, start addr, load addr
+        // $00, $ff, $XXXX, $YYYY, $ZZZZ, $ZZZZ, file 
+        loadIndex = 0;
+
+        try {
+            byte[] fileBytes = Files.readAllBytes(f.toPath());
+            loadData = new int[fileBytes.length + 8];
+
+            loadData[0] = 0x00;
+            loadData[1] = 0xFF;
+
+            int sum1 = 0;
+            int sum2 = 0;
+
+            for (int i = 10; i < 8 + fileBytes.length; i++) {
+                loadData[i] = fileBytes[i - 8] & 0xFF;
+                sum1 = (sum1 + loadData[i]) % 256;
+                sum2 = (sum2 + sum1) % 256;
+
+            }
+
+            int fileSize = fileBytes.length - 2;
+
+            // filesize
+            loadData[2] = fileSize & 0xFF;
+            loadData[3] = fileSize >> 8;
+
+            // checksum
+            loadData[4] = sum1;
+            loadData[5] = sum2;
+
+            // start addr
+            loadData[6] = fileBytes[0] & 0xFF;
+            loadData[7] = fileBytes[1] & 0xFF;
+            loadData[8] = fileBytes[0] & 0xFF;
+            loadData[9] = fileBytes[1] & 0xFF;
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
