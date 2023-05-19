@@ -8,6 +8,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 
 import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.awt.Graphics2D;
@@ -218,7 +220,12 @@ public class KiT extends JPanel {
     }
 
     public void startLoad(File f) {
-        uart.startLoad(f);
+        uart.loadPrg(f);
+    }
+
+    public void onExit() {
+        ssd.writeFile();
+        System.exit(0);
     }
 
     public static void addSpeedButtons(JPanel controlPanel, KiT kit) {
@@ -229,7 +236,7 @@ public class KiT extends JPanel {
         JRadioButton fastButton = new JRadioButton("Turbo");
         fastButton.setFocusable(false);
 
-        //Group the radio buttons.
+        // Group the radio buttons.
         ButtonGroup group = new ButtonGroup();
         group.add(slowButton);
         group.add(fastButton);
@@ -317,7 +324,14 @@ public class KiT extends JPanel {
         frame.setSize(1200, 900);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                kit.onExit();
+            }
+        });
 
         kit.run();
 
@@ -348,6 +362,6 @@ public class KiT extends JPanel {
 		}).start();
 
 
-        // kit.startLoad(new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/mandelbrot/mandelbrot.prg"));
+        kit.startLoad(new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/snake/snake.prg"));
     }   
 }

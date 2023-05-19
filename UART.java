@@ -47,7 +47,7 @@ public class UART implements BusListener {
         if (bus.readBitSet()) {
             if (addr == RBR && loadData != null && loadIndex < loadData.length) {
                 registers[RBR] = loadData[loadIndex];
-                System.out.println(loadData[loadIndex]);
+                // System.out.println(loadData[loadIndex]);
                 loadIndex++;
             } 
 
@@ -57,9 +57,8 @@ public class UART implements BusListener {
         }
     }
 
-    public void startLoad(File f) {
-        // TODO: send header: filetype, video mode, fize size, checksum, start addr, load addr
-        // $00, $ff, $XXXX, $YYYY, $ZZZZ, $ZZZZ, file 
+
+    public void loadPrg(File f) {
         loadIndex = 0;
 
         try {
@@ -92,6 +91,8 @@ public class UART implements BusListener {
             // start addr
             loadData[6] = fileBytes[0] & 0xFF;
             loadData[7] = fileBytes[1] & 0xFF;
+
+            // load addr
             loadData[8] = fileBytes[0] & 0xFF;
             loadData[9] = fileBytes[1] & 0xFF;
 

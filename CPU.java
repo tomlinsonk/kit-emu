@@ -15,7 +15,7 @@ public class CPU {
         ZEROPAGE(1),
         ZEROPAGE_X(1),
         ZEROPAGE_Y(1),
-        ZEROPAGE_INDIRECT(2);
+        ZEROPAGE_INDIRECT(1);
         
 
         private final int operandBytes;
@@ -105,6 +105,12 @@ public class CPU {
     class LDAIndirectY extends LDA {
         LDAIndirectY() {
             super("lda", AddressingMode.INDIRECT_Y, 0xB1, 2, 5);
+        }
+    }
+
+    class LDAZeropageIndirect extends LDA {
+        LDAZeropageIndirect() {
+            super("lda", AddressingMode.ZEROPAGE_INDIRECT, 0xB2, 2, 5);
         }
     }
 
@@ -251,6 +257,12 @@ public class CPU {
     class STAIndirectY extends STA {
         STAIndirectY() {
             super("sta", AddressingMode.INDIRECT_Y, 0x91, 2, 6);
+        }
+    }
+
+    class STAZeropageIndirect extends STA {
+        STAZeropageIndirect() {
+            super("sta", AddressingMode.ZEROPAGE_INDIRECT, 0x92, 2, 5);
         }
     }
 
@@ -2047,10 +2059,10 @@ public class CPU {
         this.bus = bus;
 
         Instruction[] allInstructions = {
-            new LDAImmediate(), new LDAZeropage(), new LDAZeropageX(), new LDAAbsolute(), new LDAAbsoluteX(), new LDAAbsoluteY(), new LDAXIndirect(), new LDAIndirectY(),
+            new LDAImmediate(), new LDAZeropage(), new LDAZeropageX(), new LDAAbsolute(), new LDAAbsoluteX(), new LDAAbsoluteY(), new LDAXIndirect(), new LDAIndirectY(), new LDAZeropageIndirect(),
             new LDXImmediate(), new LDXAbsolute(), new LDXAbsoluteY(), new LDXZeropage(), new LDXZeropageY(),
             new LDYImmediate(), new LDYAbsolute(), new LDYAbsoluteX(), new LDYZeropage(), new LDYZeropageX(),
-            new STAZeropage(), new STAZeropageX(), new STAAbsolute(), new STAAbsoluteX(), new STAAbsoluteY(), new STAXIndirect(), new STAIndirectY(),
+            new STAZeropage(), new STAZeropageX(), new STAAbsolute(), new STAAbsoluteX(), new STAAbsoluteY(), new STAXIndirect(), new STAIndirectY(), new STAZeropageIndirect(),
             new STXZeropage(), new STXZeropageY(), new STXAbsolute(),
             new STYZeropage(), new STYZeropageX(), new STYAbsolute(),
             new STZZeropage(), new STZZeropageX(), new STZAbsolute(), new STZAbsoluteX(),
@@ -2174,6 +2186,7 @@ public class CPU {
                 addrLo = bus.read(operand);
                 addrHi = bus.read(operand + 1);
                 return (addrLo + addrHi * 0x100 + Y) & 0xFFFF;
+            case ZEROPAGE_INDIRECT:
             case INDIRECT:
                 addrLo = bus.read(operand);
                 addrHi = bus.read(operand + 1);

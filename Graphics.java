@@ -26,6 +26,13 @@ public class Graphics implements BusListener {
         {BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE},
         {RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED, RED}
     };
+
+    private static final int[][] CG3_PIXELS = {
+        {GREEN, GREEN, GREEN, GREEN},
+        {YELLOW, YELLOW, YELLOW, YELLOW},
+        {BLUE, BLUE, BLUE, BLUE},
+        {RED, RED, RED, RED}
+    };
     
     private static final int[][] RG1_PIXELS = {
         {DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN, DARK_GREEN},
@@ -102,10 +109,24 @@ public class Graphics implements BusListener {
                 x = (i % 16) * 16;
                 y = (i / 16) * 3;
 
-                img.setRGB(x, y, 4, 3, CG1_PIXELS[vramByte >> 6], 0, 1);
-                img.setRGB(x + 4, y, 4, 3, CG1_PIXELS[(vramByte >> 4) & 0b00000011], 0, 1);
-                img.setRGB(x + 8, y, 4, 3, CG1_PIXELS[(vramByte >> 2) & 0b00000011], 0, 1);
-                img.setRGB(x + 12, y, 4, 3, CG1_PIXELS[vramByte & 0b00000011], 0, 1);
+                img.setRGB(x, y, 4, 3, CG1_PIXELS[vramByte >> 6], 0, 4);
+                img.setRGB(x + 4, y, 4, 3, CG1_PIXELS[(vramByte >> 4) & 0b00000011], 0, 4);
+                img.setRGB(x + 8, y, 4, 3, CG1_PIXELS[(vramByte >> 2) & 0b00000011], 0, 4);
+                img.setRGB(x + 12, y, 4, 3, CG1_PIXELS[vramByte & 0b00000011], 0, 4);
+            }
+        } else if (videoMode == MODE_CG3) {
+            int vramByte;
+            int x;
+            int y;
+            for (int i = 0; i < 3072; i++) {
+                vramByte = vram.get(i);
+                x = (i % 32) * 8;
+                y = (i / 32) * 2;
+
+                img.setRGB(x, y, 2, 2, CG3_PIXELS[vramByte >> 6], 0, 1);
+                img.setRGB(x + 2, y, 2, 2, CG3_PIXELS[(vramByte >> 4) & 0b00000011], 0, 2);
+                img.setRGB(x + 4, y, 2, 2, CG3_PIXELS[(vramByte >> 2) & 0b00000011], 0, 2);
+                img.setRGB(x + 6, y, 2, 2, CG3_PIXELS[vramByte & 0b00000011], 0, 2);
             }
         } else if (videoMode == MODE_RG1) {
             int vramByte;
@@ -116,14 +137,14 @@ public class Graphics implements BusListener {
                 x = (i % 16) * 16;
                 y = (i / 16) * 3;
 
-                img.setRGB(x, y, 2, 3, RG1_PIXELS[(vramByte >> 7) & 1], 0, 1);
-                img.setRGB(x + 2, y, 2, 3, RG1_PIXELS[(vramByte >> 6) & 1], 0, 1);
-                img.setRGB(x + 4, y, 2, 3, RG1_PIXELS[(vramByte >> 5) & 1], 0, 1);
-                img.setRGB(x + 6, y, 2, 3, RG1_PIXELS[(vramByte >> 4) & 1], 0, 1);
-                img.setRGB(x + 8, y, 2, 3, RG1_PIXELS[(vramByte >> 3) & 1], 0, 1);
-                img.setRGB(x + 10, y, 2, 3, RG1_PIXELS[(vramByte >> 2) & 1], 0, 1);
-                img.setRGB(x + 12, y, 2, 3, RG1_PIXELS[(vramByte >> 1) & 1], 0, 1);
-                img.setRGB(x + 14, y, 2, 3, RG1_PIXELS[vramByte & 1], 0, 1);
+                img.setRGB(x, y, 2, 3, RG1_PIXELS[(vramByte >> 7) & 1], 0, 2);
+                img.setRGB(x + 2, y, 2, 3, RG1_PIXELS[(vramByte >> 6) & 1], 0, 2);
+                img.setRGB(x + 4, y, 2, 3, RG1_PIXELS[(vramByte >> 5) & 1], 0, 2);
+                img.setRGB(x + 6, y, 2, 3, RG1_PIXELS[(vramByte >> 4) & 1], 0, 2);
+                img.setRGB(x + 8, y, 2, 3, RG1_PIXELS[(vramByte >> 3) & 1], 0, 2);
+                img.setRGB(x + 10, y, 2, 3, RG1_PIXELS[(vramByte >> 2) & 1], 0, 2);
+                img.setRGB(x + 12, y, 2, 3, RG1_PIXELS[(vramByte >> 1) & 1], 0, 2);
+                img.setRGB(x + 14, y, 2, 3, RG1_PIXELS[vramByte & 1], 0, 2);
 
             }
         } else if (videoMode == MODE_RG6) {

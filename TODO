@@ -1,8 +1,8 @@
 TODO:
 - Implement other video modes: CG2, RG2, CG3, RG3, CG6
-- Add prg loading support
 
 DONE:
+- Add prg loading support
 - Add reset button
 - Add frequency display
 - Add dummy UART, SID
