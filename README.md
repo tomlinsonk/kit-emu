@@ -14,6 +14,7 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `Graphics.java`: emulates the MC6847-based KiT graphics card (only text mode supported so far).
 - `VIA.java`: emulates the 65C22 VIA chip. Can request interrupts.
 - `SSD.java`: emulates a 256 Kb SSD using the SST39SF020A flash chip
+- `SID.java`: a dummy class that occupies the SID sound card's address space but does nothing (just exists so programs with sound work on the emulator, but no sound plays)
 - `ssd.bin`: the binary contents of the SSD, loaded on start and saved on exit
 
 ## Instructions
