@@ -1,5 +1,5 @@
 # Emulator for the KiT 6502 Computer
-This is a (work in progress) emulator for the KiT 6502-based computer I've built.
+This is an emulator for the KiT 6502-based computer I've built. The emulator has all the functionality of the real hardware except sound and NES controller input (neither currently planned). The emu
 
 For more info on the KiT, see https://www.cs.cornell.edu/~kt/categories/6502/.
 
@@ -15,3 +15,6 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `VIA.java`: emulates the 65C22 VIA chip. Can request interrupts.
 - `SSD.java`: emulates a 256 Kb SSD using the SST39SF020A flash chip
 - `ssd.bin`: the binary contents of the SSD, loaded on start and saved on exit
+
+## Instructions
+To run the emulator, just do `javac *.java` and `java KiT`. If you want to load a program over the emulated serial port (see my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo), you'll just need to change `loadFile` at the bottom of `KiT.java` to point towards an assembled `.prg` file.

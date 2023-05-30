@@ -361,7 +361,11 @@ public class KiT extends JPanel {
             }
 		}).start();
 
-
-        kit.startLoad(new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/pong/pong.prg"));
+        File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/pong/pong.prg");
+        if (loadFile.isFile()) {
+            kit.startLoad(loadFile);
+        } else {
+            System.out.println("Warning: couldn't find load file " + loadFile + ". Update the path at the bottom of KiT.java to load a .prg file");
+        }
     }   
 }
