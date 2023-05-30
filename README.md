@@ -1,5 +1,5 @@
 # Emulator for the KiT 6502 Computer
-This is an emulator for the KiT 6502-based computer I've built. The emulator has all the functionality of the real hardware except sound and NES controller input (neither currently planned). The emu
+This is an emulator for the KiT 6502-based computer I've built. The emulator has all the functionality of the real hardware except sound and NES controller input (neither currently planned).
 
 For more info on the KiT, see https://www.cs.cornell.edu/~kt/categories/6502/.
 
