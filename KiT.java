@@ -362,6 +362,6 @@ public class KiT extends JPanel {
 		}).start();
 
 
-        kit.startLoad(new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/snake/snake.prg"));
+        kit.startLoad(new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/pong/pong.prg"));
     }   
 }

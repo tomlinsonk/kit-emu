@@ -94,10 +94,10 @@ public class SSD implements BusListener {
 
                 if (ssdAddr == SECTOR_ERASE_ADDRS[sectorEraseIdx] && busData == SECTOR_ERASE_DATA[sectorEraseIdx]) {
                     sectorEraseIdx++;
-                    System.out.println("erase i = " + sectorEraseIdx);
+                    // System.out.println("erase i = " + sectorEraseIdx);
                 } else {
                     sectorEraseIdx = 0;
-                    System.out.println("erase i = " + sectorEraseIdx);
+                    // System.out.println("erase i = " + sectorEraseIdx);
 
                 }
             }

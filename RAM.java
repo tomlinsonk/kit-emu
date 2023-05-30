@@ -13,12 +13,19 @@ public class RAM implements BusListener {
     }
 
     public void activate() {
+        int addr = bus.getAddr() - startAddr;
         // System.out.println("RAM activated, bus addr " + bus.getAddr());
         if (bus.readBitSet()) {
-            bus.setData(this.data[bus.getAddr() - startAddr]);
+            bus.setData(this.data[addr]);
+
+            // if (addr >= 0x1b05) {
+            //     System.out.println("RAM READ " + Integer.toHexString(this.data[addr]) + " AT " + Integer.toHexString(addr));
+            // }
         } else {
-            // System.out.println("RAM WRITE " + bus.getData() + " TO " + bus.getAddr());
-            this.data[bus.getAddr() - startAddr] = bus.getData();
+            this.data[addr] = bus.getData();
+            // if (addr >= 0x1b05) {
+            //     System.out.println("RAM WRITE " + Integer.toHexString(this.data[addr]) + " AT " + Integer.toHexString(addr));
+            // }
         }
     }
 
