@@ -18,4 +18,4 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `ssd.bin`: the binary contents of the SSD, loaded on start and saved on exit
 
 ## Instructions
-To run the emulator, just do `javac *.java` and `java KiT`. If you want to load a program over the emulated serial port (see my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo), you'll just need to change `loadFile` at the bottom of `KiT.java` to point towards an assembled `.prg` file.
+To run the emulator, just do `javac *.java` and `java KiT`. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
