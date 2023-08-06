@@ -1675,8 +1675,15 @@ public class CPU {
             int addrLo = bus.read(0x0100 + S);
             S = (S + 1) & 0xFF;
             int addrHi = bus.read(0x0100 + S);
+
+            // if (PC < 5000 || addrHi < 0x50) {
+            //     System.out.println("rts from $" + Integer.toHexString(PC) + "  to $" + Integer.toHexString(addrHi) + Integer.toHexString(addrLo));
+
+            // }
+
             PC = addrHi * 0x100 + addrLo;
             incPC();
+
         }
     }
 
@@ -2026,6 +2033,25 @@ public class CPU {
         }
     }
 
+
+    /**
+     * Debugging pseudo-instructions
+     */
+    class Breakpoint extends Instruction {
+
+        Breakpoint() {
+            super("bpt", AddressingMode.IMPLIED, 0xBB, 1, 0);
+        }
+
+        @Override
+        public void exec() {
+            paused = true;
+            incPC();
+        }
+
+    }
+
+
     // registers
     private int PC;
     private int A;
@@ -2047,6 +2073,8 @@ public class CPU {
 
     private long cycleCount;
 
+    private boolean paused;
+
 
     public CPU(Bus bus) {
         this.PC = 0xFFFC;
@@ -2055,6 +2083,8 @@ public class CPU {
         this.Y = 0;
 
         this.cycleCount = 0;
+
+        this.paused = false;
 
         this.bus = bus;
 
@@ -2096,24 +2126,50 @@ public class CPU {
             new BBS0(), new BBS1(), new BBS2(), new BBS3(), new BBS4(), new BBS5(), new BBS6(), new BBS7(),
             new RMB0(), new RMB1(), new RMB2(), new RMB3(), new RMB4(), new RMB5(), new RMB6(), new RMB7(),
             new SMB0(), new SMB1(), new SMB2(), new SMB3(), new SMB4(), new SMB5(), new SMB6(), new SMB7(),
+            new Breakpoint()
         };
 
         this.instructions = new Instruction[0x100];
         for (Instruction inst : allInstructions) {
             this.instructions[inst.opcode] = inst;
         }
-
     }
-
 
     public void printStatus() {
         System.out.println("A: " + A + "   X: " + X + "   Y: " + Y + "   PC: " + PC + "   NV-BDIZC: " +  String.format("%8s", Integer.toBinaryString(getP())).replace(' ', '0'));
+    }
+
+    public int getA() {
+        return A;
+    } 
+
+    public int getX() {
+        return X;
+    }
+
+    public int getY() {
+        return Y;
+    }
+
+    public int getPC() {
+        return PC;
+    }
+
+    public boolean[] getFlags() {
+        return new boolean[] {N, V, D, I, Z, C};
     }
 
     public long getCycleCount() {
         return cycleCount;
     }
 
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public void resume() {
+        paused = false;
+    }
 
     public void reset() {
         PC = bus.read(0xFFFC) + bus.read(0xFFFD) * 0x100;
@@ -2121,6 +2177,7 @@ public class CPU {
         D = false;
         S = 0xFF;
         cycleCount = 0;
+        paused = false;
     }
 
     public void step() {
@@ -2129,6 +2186,10 @@ public class CPU {
         } else {
             int opcode = bus.read(PC);
             Instruction inst = this.instructions[opcode];
+
+            if (inst == null) {
+                printStatus();
+            }
             
             assert inst != null : "Unsupported opcode " + String.format("0x%02x", opcode);
     
@@ -2137,7 +2198,6 @@ public class CPU {
             inst.exec();
         }
     }
-
 
 
     private void incPC() {

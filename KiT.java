@@ -12,6 +12,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -61,11 +62,104 @@ public class KiT extends JPanel {
     private SID sid;
 
     private boolean doReset;
+    private boolean debugging;
 
     private Graphics graphics;
 
     private JLabel clockLabel;
     private boolean turboMode;
+
+    private final Object pauseLock = new Object();
+
+
+
+    private class Debugger {
+        private JLabel registerLabel;
+        private JLabel flagLabel;
+
+        private Debugger() {    
+            createDebugWindow();
+        }
+    
+        private void createDebugWindow() {
+            JFrame frame = new JFrame("Debugger");
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            JPanel panel = new JPanel();
+    
+            panel.setLayout(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+
+            // Labels
+            Font font = new Font("Monospaced", Font.PLAIN, 12 );
+            registerLabel = new JLabel();
+            registerLabel.setFont(font);
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            panel.add(registerLabel, gbc);
+            updateRegisterLabel();
+
+            flagLabel = new JLabel();
+            flagLabel.setFont(font);
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            panel.add(flagLabel, gbc); 
+            updateFlagLabel();
+
+    
+            // Step button
+            JButton stepButton = new JButton("Step");
+            gbc.gridx = 0;
+            gbc.gridy = 2;
+            panel.add(stepButton, gbc); 
+    
+            stepButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    cpu.step();
+                    updateRegisterLabel();
+                    updateFlagLabel();
+
+                }
+            });
+    
+            frame.setContentPane(panel);
+    
+            frame.setSize(300, 100);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+            frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+            frame.addWindowListener(new WindowAdapter() {
+                public void windowClosing(WindowEvent e) {
+                    synchronized (pauseLock) {
+                        cpu.resume();
+                        debugging = false;
+                        pauseLock.notifyAll();
+                    }
+
+                    frame.dispose();
+                }
+            });
+
+        }
+
+        private void updateRegisterLabel() {
+            registerLabel.setText(String.format("A: $%02X  X: $%02X  Y: $%02X  PC: $%04X", 
+                                                cpu.getA(), cpu.getX(), cpu.getY(), cpu.getPC()));
+        }
+
+        private void updateFlagLabel() {
+            // N, V, D, I, Z, C
+            boolean[] cpuFlags = cpu.getFlags();
+            int[] flags = new int[cpuFlags.length];
+            for (int i = 0; i < flags.length; i++) {
+                flags[i] = cpuFlags[i] ? 1 : 0;
+            }
+
+            flagLabel.setText(String.format("N: %d  Z: %d  C: %d  V: %d  D: %d  I: %d  ",
+                                            flags[0], flags[4], flags[5], flags[1], flags[2], flags[3]));
+        }
+    }
 
     public KiT() {
         KeyListener listener = new PS2KeyListender();
@@ -102,6 +196,7 @@ public class KiT extends JPanel {
         bus.addInterrupter(via2);
 
         turboMode = false;
+        debugging = false;
 
         cpu.reset();
         // cpu.printStatus();
@@ -140,6 +235,7 @@ public class KiT extends JPanel {
         }
     }
 
+
     private void run() {
         new Thread(new Runnable() {
 			@Override
@@ -154,7 +250,8 @@ public class KiT extends JPanel {
 
                 long nsElapsed;
                 while (true) {
-                    if (doReset) {
+                    synchronized (pauseLock) {
+                        if (doReset) {
                         via1.reset();
                         via2.reset();
                         cpu.reset();
@@ -162,6 +259,16 @@ public class KiT extends JPanel {
                         prevCycleCount = 0;
                         checkpointTime = 0;
                         checkpointCycles = 0;
+                        } else if (cpu.isPaused()) {
+                            if (!debugging) {
+                                startDebugger();
+                            }
+                            try {
+                                pauseLock.wait();
+                            } catch (InterruptedException e) {
+                                break;
+                            }
+                        }
                     }
 
                     currTime = System.nanoTime();
@@ -179,6 +286,7 @@ public class KiT extends JPanel {
                     }
 
                     prevCycleCount = cycleCount;
+                    // System.out.println(cycleCount);
 
                     via1.updateCycleCount(newCycles);
                     via2.updateCycleCount(newCycles);
@@ -191,8 +299,15 @@ public class KiT extends JPanel {
                     }
                 }
 			}
+
+
 		}).start();
     }
+
+    private void startDebugger() {
+        debugging = true;
+        Debugger debugger = new Debugger();
+    }   
 
     private void kbByteDelay() {
         try {
@@ -361,7 +476,10 @@ public class KiT extends JPanel {
             }
 		}).start();
 
-        File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/pong/pong.prg");
+        // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/tetris/tetris.prg");
+        // File loadFile = new File("/Users/tomlinsonk/projects/6502/kcc/out.prg");
+        File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/text-edit/text-edit.prg");
+
         if (loadFile.isFile()) {
             kit.startLoad(loadFile);
         } else {

@@ -2,7 +2,6 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.rmi.StubNotFoundException;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import javax.imageio.ImageIO;

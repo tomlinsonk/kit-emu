@@ -19,3 +19,10 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 
 ## Instructions
 To run the emulator, just do `javac *.java` and `java KiT`. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
+
+## Planned features
+- ~~Use unused opcode to signal an emulator breakpoint~~: 0xBB
+- ~~When a breakpoint is reached, open a debugging console~~
+    - Debugging console should also viewing memory and ~~registers~~
+    - More advanced feature: allow memory and registers to be modified
+    - ~~Ability to resume execution~~
