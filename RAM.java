@@ -32,4 +32,9 @@ public class RAM implements BusListener {
     public int get(int i) {
         return this.data[i];
     }
+
+    @Override
+    public int debugRead(int addr) {
+        return this.data[addr - startAddr];
+    }
 }

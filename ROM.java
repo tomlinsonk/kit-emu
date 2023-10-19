@@ -33,4 +33,9 @@ public class ROM implements BusListener {
         // System.out.println("ROM activated, bus addr " + bus.getAddr());
         bus.setData(this.data[bus.getAddr() - startAddr]);
     }
+
+    @Override
+    public int debugRead(int addr) {
+        return this.data[addr - startAddr];
+    }
 }

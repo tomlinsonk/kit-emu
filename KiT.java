@@ -6,12 +6,16 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -76,6 +80,7 @@ public class KiT extends JPanel {
     private class Debugger {
         private JLabel registerLabel;
         private JLabel flagLabel;
+        private JTextArea memoryView;
 
         private Debugger() {    
             createDebugWindow();
@@ -88,29 +93,81 @@ public class KiT extends JPanel {
     
             panel.setLayout(new GridBagLayout());
             GridBagConstraints gbc = new GridBagConstraints();
+            gbc.weightx = 1;
+            gbc.weighty = 1;
 
             // Labels
-            Font font = new Font("Monospaced", Font.PLAIN, 12 );
+            Font monoFont = new Font("Monospaced", Font.PLAIN, 12 );
             registerLabel = new JLabel();
-            registerLabel.setFont(font);
-            gbc.gridx = 0;
+            registerLabel.setFont(monoFont);
+            gbc.gridx = 1;
             gbc.gridy = 0;
+            gbc.gridwidth = 1;
+            gbc.anchor = GridBagConstraints.WEST;
             panel.add(registerLabel, gbc);
             updateRegisterLabel();
 
             flagLabel = new JLabel();
-            flagLabel.setFont(font);
-            gbc.gridx = 0;
+            flagLabel.setFont(monoFont);
+            gbc.gridx = 1;
             gbc.gridy = 1;
+            gbc.gridwidth = 1;
+            gbc.weightx = 10;
+            gbc.anchor = GridBagConstraints.WEST;
             panel.add(flagLabel, gbc); 
             updateFlagLabel();
 
-    
+            // Reset weight
+            gbc.weightx = 1;
+
             // Step button
             JButton stepButton = new JButton("Step");
             gbc.gridx = 0;
-            gbc.gridy = 2;
+            gbc.gridy = 0;
+            gbc.gridwidth = 1;
+            gbc.gridheight = 2;
+            gbc.anchor = GridBagConstraints.CENTER;
             panel.add(stepButton, gbc); 
+
+            // Memory view area
+            JTextArea memoryView = new JTextArea(getMemText(0), 17, 54);
+            memoryView.setFont(monoFont);
+            JScrollPane scrollPane = new JScrollPane(memoryView);
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+            memoryView.setEditable(false);
+            gbc.fill = GridBagConstraints.BOTH;
+            gbc.gridy = 3;
+            gbc.gridwidth = 3;
+            gbc.gridheight = 1;
+            panel.add(scrollPane, gbc);
+
+            // Memory start addr field
+            JTextField memStartAddrField = new JTextField("0000", 4);
+            gbc.gridy = 2;
+            gbc.gridx = 0;
+            gbc.gridwidth = 1;
+            gbc.gridheight = 1;
+            gbc.anchor = GridBagConstraints.EAST;
+            gbc.fill = GridBagConstraints.NONE;
+            panel.add(memStartAddrField, gbc);
+
+
+            JButton memStartButton = new JButton("Go");
+            gbc.gridx = 1;
+            gbc.gridy = 2;
+            gbc.gridwidth = 1;
+            gbc.gridheight = 1;
+            gbc.weightx = 1;
+            gbc.anchor = GridBagConstraints.WEST;
+            panel.add(memStartButton, gbc); 
+    
+            memStartButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int startAddr = Integer.parseInt(memStartAddrField.getText(), 16);
+                    memoryView.setText(getMemText(startAddr));
+                }
+            });
     
             stepButton.addActionListener(new ActionListener() {
                 @Override
@@ -118,13 +175,17 @@ public class KiT extends JPanel {
                     cpu.step();
                     updateRegisterLabel();
                     updateFlagLabel();
+                    int startAddr = Integer.parseInt(memStartAddrField.getText(), 16);
+                    memoryView.setText(getMemText(startAddr));
 
                 }
             });
+
+
     
             frame.setContentPane(panel);
     
-            frame.setSize(300, 100);
+            frame.setSize(410, 410);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
             frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -141,6 +202,20 @@ public class KiT extends JPanel {
                 }
             });
 
+        }
+
+        protected String getMemText(int startAddr) {
+            String s = "       0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n";
+            for (int row = 0; row < 16; row++) {
+                s += String.format("%04x:", startAddr + 16 * row);
+                for (int col = 0; col < 16 && (startAddr + 16 * row + col) <= 0xffff; col++) {
+                    s += String.format(" %02x", bus.debugRead(startAddr + 16 * row + col));
+                    if (col == 7) s += " ";
+                }
+                s += "\n";
+            }
+
+            return s;
         }
 
         private void updateRegisterLabel() {
@@ -252,13 +327,13 @@ public class KiT extends JPanel {
                 while (true) {
                     synchronized (pauseLock) {
                         if (doReset) {
-                        via1.reset();
-                        via2.reset();
-                        cpu.reset();
-                        doReset = false;
-                        prevCycleCount = 0;
-                        checkpointTime = 0;
-                        checkpointCycles = 0;
+                            via1.reset();
+                            via2.reset();
+                            cpu.reset();
+                            doReset = false;
+                            prevCycleCount = 0;
+                            checkpointTime = 0;
+                            checkpointCycles = 0;
                         } else if (cpu.isPaused()) {
                             if (!debugging) {
                                 startDebugger();

@@ -101,4 +101,9 @@ public class UART implements BusListener {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public int debugRead(int addr) {
+        return registers[addr & 0x0F];
+    }
 }

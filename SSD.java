@@ -116,4 +116,9 @@ public class SSD implements BusListener {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public int debugRead(int addr) {
+        return this.data[(addr - startAddr) | (via.getPortB() << 12)];
+    }
 }

@@ -28,6 +28,14 @@ public class Bus {
         return this.data;
     }
 
+    /**
+     * Perform a read without altering the state of the bus or activating side-effects
+     * @param addr
+     */
+    public int debugRead(int addr) {
+        return addrDecoder.debugRead(addr);
+    }
+
     public void write(int addr, int data) {
         this.addr = addr;
         this.data = data;

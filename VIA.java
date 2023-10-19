@@ -218,6 +218,11 @@ public class VIA implements Interrupter, BusListener {
         this.portBVal = 0;
     }
 
+    @Override
+    public int debugRead(int addr) {
+        return this.registers[addr & 0x0F];
+    }
+
     // public static void main(String[] args) {
     //     VIA via = new VIA(null, 0, 16);
     //     via.printRegisters();

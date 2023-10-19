@@ -45,5 +45,16 @@ public class AddressDecoder {
         assert false: "Can't decode address $" + Integer.toHexString(addr);
     }
 
+    public int debugRead(int addr) {
+        for (Device d : devices) {
+            if (addr >= d.startAddr && addr <= d.endAddr) {
+                return d.device.debugRead(addr);
+            }
+        }
+
+        assert false: "Can't decode address $" + Integer.toHexString(addr);
+        return -1;
+    }
+
     
 }

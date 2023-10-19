@@ -223,4 +223,9 @@ public class Graphics implements BusListener {
         return charSet;
         
     }
+
+    @Override
+    public int debugRead(int addr) {
+        return vram.get(addr - vramStartAddr);
+    }
 }

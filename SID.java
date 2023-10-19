@@ -12,6 +12,11 @@ public class SID implements BusListener {
 
     @Override
     public void activate() {
+        throw new UnsupportedOperationException("Unimplemented activate 'debugRead'");
+    }
 
+    @Override
+    public int debugRead(int addr) {
+        throw new UnsupportedOperationException("Unimplemented method 'debugRead'");
     }
 }
