@@ -219,8 +219,8 @@ public class KiT extends JPanel {
         }
 
         private void updateRegisterLabel() {
-            registerLabel.setText(String.format("A: $%02X  X: $%02X  Y: $%02X  PC: $%04X", 
-                                                cpu.getA(), cpu.getX(), cpu.getY(), cpu.getPC()));
+            registerLabel.setText(String.format("A: $%02X  X: $%02X  Y: $%02X  S: $%02X  PC: $%04X", 
+                                                cpu.getA(), cpu.getX(), cpu.getY(), cpu.getS(), cpu.getPC()));
         }
 
         private void updateFlagLabel() {
@@ -231,8 +231,9 @@ public class KiT extends JPanel {
                 flags[i] = cpuFlags[i] ? 1 : 0;
             }
 
-            flagLabel.setText(String.format("N: %d  Z: %d  C: %d  V: %d  D: %d  I: %d  ",
-                                            flags[0], flags[4], flags[5], flags[1], flags[2], flags[3]));
+            flagLabel.setText(String.format("N: %d  Z: %d  C: %d  V: %d  D: %d  I: %d  prev: %s",
+                                            flags[0], flags[4], flags[5], flags[1], flags[2], flags[3],
+                                            cpu.getLastInstructionMnemonic()));
         }
     }
 
@@ -458,7 +459,6 @@ public class KiT extends JPanel {
         //     System.out.println(j + ": " + ram.get(j));
         // }
 
-        PS2.getScanCode(KeyEvent.VK_A);
         KiT kit = new KiT();
 
         JFrame frame = new JFrame("KiT Emulator");
@@ -551,9 +551,9 @@ public class KiT extends JPanel {
             }
 		}).start();
 
-        // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/tetris/tetris.prg");
+        File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/tetris/tetris.prg");
         // File loadFile = new File("/Users/tomlinsonk/projects/6502/kcc/out.prg");
-        File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/text-edit/text-edit.prg");
+        // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/text-edit/text-edit.prg");
 
         if (loadFile.isFile()) {
             kit.startLoad(loadFile);

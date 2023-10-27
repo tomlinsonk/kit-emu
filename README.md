@@ -26,4 +26,5 @@ Crossed out = done!
 - ~~When a breakpoint is reached, open a debugging console~~
     - ~~Debugging console should also viewing memory and registers~~
     - ~~Ability to resume execution~~
+    - Show the last executed instruction mnemonic and argument
     - More advanced feature: allow memory and registers to be modified

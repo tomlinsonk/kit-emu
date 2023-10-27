@@ -40,7 +40,7 @@ public class UART implements BusListener {
 
     @Override
     public void activate() {
-        // System.out.println(Integer.toHexString(bus.getAddr()));
+        System.out.println(Integer.toHexString(bus.getAddr()));
 
         int addr = bus.getAddr() & 0x0F;
 

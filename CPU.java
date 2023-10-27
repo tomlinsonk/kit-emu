@@ -2075,6 +2075,8 @@ public class CPU {
 
     private boolean paused;
 
+    private Instruction lastInstruction;
+
 
     public CPU(Bus bus) {
         this.PC = 0xFFFC;
@@ -2087,6 +2089,8 @@ public class CPU {
         this.paused = false;
 
         this.bus = bus;
+
+        this.lastInstruction = null;
 
         Instruction[] allInstructions = {
             new LDAImmediate(), new LDAZeropage(), new LDAZeropageX(), new LDAAbsolute(), new LDAAbsoluteX(), new LDAAbsoluteY(), new LDAXIndirect(), new LDAIndirectY(), new LDAZeropageIndirect(),
@@ -2155,6 +2159,10 @@ public class CPU {
         return PC;
     }
 
+    public int getS() {
+        return S;
+    }
+
     public boolean[] getFlags() {
         return new boolean[] {N, V, D, I, Z, C};
     }
@@ -2195,6 +2203,8 @@ public class CPU {
     
             // System.out.println(inst.mnemonic);
             cycleCount += inst.cycles;
+            lastInstruction = inst;
+
             inst.exec();
         }
     }
@@ -2302,5 +2312,10 @@ public class CPU {
 
         PC = vectorHi * 0x100 + vectorLo;
         I = true;
+    }
+
+    public String getLastInstructionMnemonic() {
+        if (lastInstruction == null) return "null";
+        return lastInstruction.mnemonic;
     }
 }
