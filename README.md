@@ -11,7 +11,7 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `AddressDecoder.java`: activates components that listen to the bus whenever their address range is selected
 - `RAM.java`: emulates the RAM chip. Reads and writes happen through the bus.
 - `ROM.java`: emulates the ROM chip. Initialized according to a 6502 binary file.
-- `Graphics.java`: emulates the MC6847-based KiT graphics card (only text mode supported so far).
+- `Graphics.java`: emulates the MC6847-based KiT graphics card.
 - `VIA.java`: emulates the 65C22 VIA chip. Can request interrupts.
 - `SSD.java`: emulates a 256 Kb SSD using the SST39SF020A flash chip
 - `SID.java`: a dummy class that occupies the SID sound card's address space but does nothing (just exists so programs with sound work on the emulator, but no sound plays)
@@ -21,8 +21,9 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 To run the emulator, just do `javac *.java` and `java KiT`. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
 ## Planned features
+Crossed out = done!
 - ~~Use unused opcode to signal an emulator breakpoint~~: 0xBB
 - ~~When a breakpoint is reached, open a debugging console~~
-    - Debugging console should also viewing memory and ~~registers~~
-    - More advanced feature: allow memory and registers to be modified
+    - ~~Debugging console should also viewing memory and registers~~
     - ~~Ability to resume execution~~
+    - More advanced feature: allow memory and registers to be modified
