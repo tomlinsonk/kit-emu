@@ -20,6 +20,8 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 ## Instructions
 To run the emulator, just do `javac *.java` and `java KiT`. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
+(Looking back on this, I hardcoded some paths that you'll need to update.... TODO: make these configurable.)
+
 ## Planned features
 Crossed out = done!
 - ~~Use unused opcode to signal an emulator breakpoint~~: 0xBB
