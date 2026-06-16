@@ -15,7 +15,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -551,6 +550,7 @@ public class KiT extends JPanel {
             }
 		}).start();
 
+        // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/hi/hi.prg");
         // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/tetris/tetris.prg");
         File loadFile = new File("/Users/tomlinsonk/projects/6502/kcc/out.prg");
         // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/text-edit/text-edit.prg");

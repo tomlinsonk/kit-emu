@@ -1676,11 +1676,6 @@ public class CPU {
             S = (S + 1) & 0xFF;
             int addrHi = bus.read(0x0100 + S);
 
-            // if (PC < 5000 || addrHi < 0x50) {
-            //     System.out.println("rts from $" + Integer.toHexString(PC) + "  to $" + Integer.toHexString(addrHi) + Integer.toHexString(addrLo));
-
-            // }
-
             PC = addrHi * 0x100 + addrLo;
             incPC();
 
