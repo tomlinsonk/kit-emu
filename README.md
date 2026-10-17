@@ -20,6 +20,8 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 ## Instructions
 To run the emulator, just do `javac *.java` and `java KiT`. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
+For compiler test automation, run `java KiT --headless`. Headless mode loads `/Users/tomlinsonk/projects/6502/kcc/out.prg`, types `l`, Enter, `r`, Enter into the monitor, and dumps CPU status plus screen text when the program hits the emulator breakpoint instruction (`0xBB`). Use `--timeout-ms 5000` to dump state and exit with status 2 if the test does not reach a breakpoint, `--keys "l\nr\ns\n"` to override the scripted monitor input, and `--dump-screen-hex` to include raw text VRAM bytes.
+
 ## Planned features
 Crossed out = done!
 - ~~Use unused opcode to signal an emulator breakpoint~~: 0xBB

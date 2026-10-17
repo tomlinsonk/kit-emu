@@ -26,6 +26,9 @@ import java.awt.event.KeyEvent;
 
 public class KiT extends JPanel {
 
+    private final static File DEFAULT_LOAD_FILE = new File("/Users/tomlinsonk/projects/6502/kcc/out.prg");
+    private final static String DEFAULT_HEADLESS_KEYS = "l\nr\n";
+
     private final static int RAM_START = 0x0000;
     private final static int RAM_END = 0x5FFF;
 
@@ -71,6 +74,7 @@ public class KiT extends JPanel {
 
     private JLabel clockLabel;
     private boolean turboMode;
+    private boolean dumpScreenHex;
 
     private final Object pauseLock = new Object();
 
@@ -272,6 +276,7 @@ public class KiT extends JPanel {
 
         turboMode = false;
         debugging = false;
+        dumpScreenHex = false;
 
         cpu.reset();
         // cpu.printStatus();
@@ -284,34 +289,92 @@ public class KiT extends JPanel {
 
         @Override
         public void keyPressed(KeyEvent e) {
-            int keyCode = e.getKeyCode();
-            if (PS2.isExtended(keyCode)) {
-                via1.kbByte(PS2.EXTENDED_CODE);
-                kbByteDelay();
-            }
-
-            via1.kbByte(PS2.getScanCode(keyCode));
+            pressKey(e.getKeyCode());
         }
 
         @Override
         public void keyReleased(KeyEvent e) {
-            int keyCode = e.getKeyCode();
-
-            via1.kbByte(PS2.RELEASE_CODE);
-            kbByteDelay();
-
-            if (PS2.isExtended(keyCode)) {
-                via1.kbByte(PS2.EXTENDED_CODE);
-                kbByteDelay();
-            }
-
-            via1.kbByte(PS2.getScanCode(keyCode));
+            releaseKey(e.getKeyCode());
 
         }
     }
 
+    private void pressKey(int keyCode) {
+        if (PS2.isExtended(keyCode)) {
+            via1.kbByte(PS2.EXTENDED_CODE);
+            kbByteDelay();
+        }
 
-    private void run() {
+        via1.kbByte(PS2.getScanCode(keyCode));
+    }
+
+    private void releaseKey(int keyCode) {
+        via1.kbByte(PS2.RELEASE_CODE);
+        kbByteDelay();
+
+        if (PS2.isExtended(keyCode)) {
+            via1.kbByte(PS2.EXTENDED_CODE);
+            kbByteDelay();
+        }
+
+        via1.kbByte(PS2.getScanCode(keyCode));
+    }
+
+    private void typeHeadlessKeys(String keys) {
+        for (int i = 0; i < keys.length(); i++) {
+            int keyCode = keyCodeFor(keys.charAt(i));
+            if (keyCode == KeyEvent.VK_UNDEFINED) {
+                System.out.println("Warning: skipping unsupported headless key " + keys.charAt(i));
+                continue;
+            }
+
+            pressKey(keyCode);
+            kbByteDelay();
+            releaseKey(keyCode);
+            kbByteDelay();
+        }
+    }
+
+    private int keyCodeFor(char c) {
+        if (c >= 'a' && c <= 'z') {
+            return KeyEvent.VK_A + c - 'a';
+        }
+
+        if (c >= 'A' && c <= 'Z') {
+            return KeyEvent.VK_A + c - 'A';
+        }
+
+        if (c >= '0' && c <= '9') {
+            return KeyEvent.VK_0 + c - '0';
+        }
+
+        switch (c) {
+            case ' ':
+                return KeyEvent.VK_SPACE;
+            case '\n':
+            case '\r':
+                return KeyEvent.VK_ENTER;
+            case '\b':
+                return KeyEvent.VK_BACK_SPACE;
+            case '\t':
+                return KeyEvent.VK_TAB;
+            case ',':
+                return KeyEvent.VK_COMMA;
+            case ';':
+                return KeyEvent.VK_SEMICOLON;
+            case '.':
+                return KeyEvent.VK_PERIOD;
+            case '/':
+                return KeyEvent.VK_SLASH;
+            case '\'':
+                return KeyEvent.VK_QUOTE;
+            default:
+                return KeyEvent.VK_UNDEFINED;
+        }
+    }
+
+
+    private void run(boolean headlessMode) {
         new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -335,6 +398,12 @@ public class KiT extends JPanel {
                             checkpointTime = 0;
                             checkpointCycles = 0;
                         } else if (cpu.isPaused()) {
+                            if (headlessMode) {
+                                dumpHeadlessState("Breakpoint reached");
+                                ssd.writeFile();
+                                break;
+                            }
+
                             if (!debugging) {
                                 startDebugger();
                             }
@@ -366,7 +435,7 @@ public class KiT extends JPanel {
                     via1.updateCycleCount(newCycles);
                     via2.updateCycleCount(newCycles);
 
-                    if (currTime - checkpointTime > 2_000_000_000) {
+                    if (clockLabel != null && currTime - checkpointTime > 2_000_000_000) {
                         clockLabel.setText(String.format("%.2f MHz", ((cycleCount - checkpointCycles) / 2_000_000.0)));
                         
                         checkpointTime = currTime;
@@ -377,6 +446,136 @@ public class KiT extends JPanel {
 
 
 		}).start();
+    }
+
+    private void run() {
+        run(false);
+    }
+
+    private void dumpHeadlessState(String reason) {
+        System.out.println(reason);
+        cpu.printStatus();
+        System.out.println("Screen:");
+        System.out.print(getScreenText());
+        if (dumpScreenHex) {
+            System.out.println("Screen hex:");
+            System.out.print(getScreenHex());
+        }
+    }
+
+    private String getScreenText() {
+        String text = "";
+        for (int row = 0; row < 16; row++) {
+            for (int col = 0; col < 32; col++) {
+                int val = bus.debugRead(VRAM_START + row * 32 + col) & 0x7F;
+                if (val >= 1 && val <= 26) {
+                    text += (char)('a' + val - 1);
+                } else if (val >= 32 && val <= 126) {
+                    text += (char) val;
+                } else {
+                    text += ' ';
+                }
+            }
+            text += "\n";
+        }
+
+        return text;
+    }
+
+    private String getScreenHex() {
+        String text = "";
+        for (int row = 0; row < 16; row++) {
+            for (int col = 0; col < 32; col++) {
+                text += String.format("%02X", bus.debugRead(VRAM_START + row * 32 + col));
+                if (col < 31) text += " ";
+            }
+            text += "\n";
+        }
+
+        return text;
+    }
+
+    private void startHeadlessKeys(String keys) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    return;
+                }
+
+                typeHeadlessKeys(keys);
+            }
+        }).start();
+    }
+
+    private void startHeadlessTimeout(long timeoutMs) {
+        if (timeoutMs <= 0) return;
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(timeoutMs);
+                } catch (InterruptedException e) {
+                    return;
+                }
+
+                dumpHeadlessState("Headless timeout after " + timeoutMs + " ms");
+                ssd.writeFile();
+                System.exit(2);
+            }
+        }).start();
+    }
+
+    private static void loadDefaultPrg(KiT kit) {
+        if (DEFAULT_LOAD_FILE.isFile()) {
+            kit.startLoad(DEFAULT_LOAD_FILE);
+        } else {
+            System.out.println("Warning: couldn't find load file " + DEFAULT_LOAD_FILE + ". Update DEFAULT_LOAD_FILE in KiT.java to load a .prg file");
+        }
+    }
+
+    private static boolean isHeadlessMode(String[] args) {
+        for (String arg : args) {
+            if (arg.equals("--headless")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean hasArg(String[] args, String name) {
+        for (String arg : args) {
+            if (arg.equals(name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static String getArgValue(String[] args, String name, String defaultValue) {
+        for (int i = 0; i < args.length - 1; i++) {
+            if (args[i].equals(name)) {
+                return args[i + 1];
+            }
+        }
+
+        return defaultValue;
+    }
+
+    private static long getLongArgValue(String[] args, String name, long defaultValue) {
+        String value = getArgValue(args, name, null);
+        if (value == null) return defaultValue;
+
+        return Long.parseLong(value);
+    }
+
+    private static String getHeadlessKeys(String[] args) {
+        return getArgValue(args, "--keys", DEFAULT_HEADLESS_KEYS).replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
     }
 
     private void startDebugger() {
@@ -407,6 +606,10 @@ public class KiT extends JPanel {
 
     public void setTurboMode(boolean val) {
         turboMode = val;
+    }
+
+    public void setDumpScreenHex(boolean val) {
+        dumpScreenHex = val;
     }
 
     public void startLoad(File f) {
@@ -459,6 +662,16 @@ public class KiT extends JPanel {
         // }
 
         KiT kit = new KiT();
+
+        if (isHeadlessMode(args)) {
+            kit.setTurboMode(true);
+            kit.setDumpScreenHex(hasArg(args, "--dump-screen-hex"));
+            loadDefaultPrg(kit);
+            kit.startHeadlessKeys(getHeadlessKeys(args));
+            kit.startHeadlessTimeout(getLongArgValue(args, "--timeout-ms", 0));
+            kit.run(true);
+            return;
+        }
 
         JFrame frame = new JFrame("KiT Emulator");
     
@@ -550,15 +763,6 @@ public class KiT extends JPanel {
             }
 		}).start();
 
-        // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/hi/hi.prg");
-        // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/tetris/tetris.prg");
-        File loadFile = new File("/Users/tomlinsonk/projects/6502/kcc/out.prg");
-        // File loadFile = new File("/Users/tomlinsonk/projects/6502/6502-software/prgs/text-edit/text-edit.prg");
-
-        if (loadFile.isFile()) {
-            kit.startLoad(loadFile);
-        } else {
-            System.out.println("Warning: couldn't find load file " + loadFile + ". Update the path at the bottom of KiT.java to load a .prg file");
-        }
+        loadDefaultPrg(kit);
     }   
 }
