@@ -11,6 +11,7 @@ public class SSD implements BusListener {
     private int endAddr;
 
     private int[] data;
+    private boolean saveEnabled = true;
 
     private int byteProgramIdx;
     private int sectorEraseIdx;
@@ -104,7 +105,13 @@ public class SSD implements BusListener {
         }
     }
 
+    public void setSaveEnabled(boolean val) {
+        saveEnabled = val;
+    }
+
     public void writeFile() {
+        if (!saveEnabled) return;
+
         byte[] bytes = new byte[data.length];
         for (int i = 0; i < data.length; i++) {
             bytes[i] = (byte)data[i];

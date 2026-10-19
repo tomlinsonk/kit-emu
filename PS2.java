@@ -12,7 +12,8 @@ public class PS2 {
         KeyEvent.VK_S, KeyEvent.VK_T, KeyEvent.VK_U, KeyEvent.VK_V, KeyEvent.VK_W, KeyEvent.VK_X, KeyEvent.VK_Y, KeyEvent.VK_Z,
         KeyEvent.VK_0, KeyEvent.VK_1, KeyEvent.VK_2, KeyEvent.VK_3, KeyEvent.VK_4, KeyEvent.VK_5, KeyEvent.VK_6, KeyEvent.VK_7, KeyEvent.VK_8, KeyEvent.VK_9,
         KeyEvent.VK_SPACE, KeyEvent.VK_ENTER, KeyEvent.VK_BACK_SPACE, KeyEvent.VK_TAB,
-        KeyEvent.VK_SHIFT, KeyEvent.VK_ESCAPE, KeyEvent.VK_COMMA, KeyEvent.VK_SEMICOLON, KeyEvent.VK_PERIOD, KeyEvent.VK_SLASH, KeyEvent.VK_QUOTE
+        KeyEvent.VK_SHIFT, KeyEvent.VK_ESCAPE, KeyEvent.VK_COMMA, KeyEvent.VK_SEMICOLON, KeyEvent.VK_PERIOD, KeyEvent.VK_SLASH, KeyEvent.VK_QUOTE,
+        KeyEvent.VK_EQUALS, KeyEvent.VK_MINUS, KeyEvent.VK_OPEN_BRACKET, KeyEvent.VK_CLOSE_BRACKET, KeyEvent.VK_BACK_SLASH, KeyEvent.VK_BACK_QUOTE
     };
 
     private static final int[] EXTENDED_KEY_CODES = {
@@ -26,6 +27,7 @@ public class PS2 {
         0x45, 0x16, 0x1E, 0x26, 0x25, 0x2E, 0x36, 0x3D, 0x3E, 0x46,
         0x29, 0x5A, 0x66, 0x0D,
         0x12, 0x76, 0x41, 0x4C, 0x49, 0x4A, 0x52,
+        0x55, 0x4E, 0x54, 0x5B, 0x5D, 0x0E,
     };
 
     private static final int[] EXTENDED_SCAN_CODES = {

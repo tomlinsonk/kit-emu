@@ -22,6 +22,18 @@ To run the emulator, just do `javac *.java` and `java KiT`. See my [KiT Code](ht
 
 (Looking back on this, I hardcoded some paths that you'll need to update.... TODO: make these configurable.)
 
+### Headless mode
+For compiler test automation, run `java -Djava.awt.headless=true KiT --headless` (the `-D` flag keeps macOS from opening it as an app and stealing focus). Headless mode loads a `.prg` over the emulated serial port, types `l`, Enter, `r`, Enter into the monitor, and runs until the program hits the emulator breakpoint instruction (`0xBB`). It then prints the CPU status and the screen text and exits with status 0.
+
+Options:
+- `--prg path/to/file.prg`: program to load (default: `/Users/tomlinsonk/projects/6502/kcc/out.prg`)
+- `--timeout-ms 5000`: dump state and exit with status 2 if no breakpoint is reached in time
+- `--keys "l\nr\ns\n"`: override the scripted monitor input
+- `--dump-screen-hex`: also print the raw text VRAM bytes
+- `--count-cycles 1000-4fff`: also print `Cycles: N`, the CPU cycles spent on instructions in that address range (hex, inclusive). Interrupt handlers and the monitor run in ROM, so they're excluded when the range covers only the program.
+
+`--no-save-ssd` (headless or GUI) keeps `ssd.bin` unchanged on exit; SSD writes only last for that run.
+
 ## Planned features
 Crossed out = done!
 - ~~Use unused opcode to signal an emulator breakpoint~~: 0xBB

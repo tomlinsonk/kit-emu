@@ -76,6 +76,11 @@ public class KiT extends JPanel {
     private boolean turboMode;
     private boolean dumpScreenHex;
 
+    // Cycles spent executing instructions in [countCyclesStart, countCyclesEnd] (off by default)
+    private int countCyclesStart = -1;
+    private int countCyclesEnd = -2;
+    private long countedCycles = 0;
+
     private final Object pauseLock = new Object();
 
 
@@ -368,6 +373,18 @@ public class KiT extends JPanel {
                 return KeyEvent.VK_SLASH;
             case '\'':
                 return KeyEvent.VK_QUOTE;
+            case '=':
+                return KeyEvent.VK_EQUALS;
+            case '-':
+                return KeyEvent.VK_MINUS;
+            case '[':
+                return KeyEvent.VK_OPEN_BRACKET;
+            case ']':
+                return KeyEvent.VK_CLOSE_BRACKET;
+            case '\\':
+                return KeyEvent.VK_BACK_SLASH;
+            case '`':
+                return KeyEvent.VK_BACK_QUOTE;
             default:
                 return KeyEvent.VK_UNDEFINED;
         }
@@ -401,7 +418,7 @@ public class KiT extends JPanel {
                             if (headlessMode) {
                                 dumpHeadlessState("Breakpoint reached");
                                 ssd.writeFile();
-                                break;
+                                System.exit(0);
                             }
 
                             if (!debugging) {
@@ -417,11 +434,16 @@ public class KiT extends JPanel {
 
                     currTime = System.nanoTime();
 
+                    int stepPC = cpu.getPC();
                     cpu.step();
 
                     cycleCount = cpu.getCycleCount();
                     newCycles = (int)(cycleCount - prevCycleCount);
                     nsElapsed = 480 * newCycles;
+
+                    if (stepPC >= countCyclesStart && stepPC <= countCyclesEnd) {
+                        countedCycles += newCycles;
+                    }
                     
                     if (!turboMode) {
                         while ((System.nanoTime() - currTime) < nsElapsed) { 
@@ -455,6 +477,9 @@ public class KiT extends JPanel {
     private void dumpHeadlessState(String reason) {
         System.out.println(reason);
         cpu.printStatus();
+        if (countCyclesStart <= countCyclesEnd) {
+            System.out.println("Cycles: " + countedCycles);
+        }
         System.out.println("Screen:");
         System.out.print(getScreenText());
         if (dumpScreenHex) {
@@ -612,8 +637,17 @@ public class KiT extends JPanel {
         dumpScreenHex = val;
     }
 
+    public void setCountCyclesRange(int start, int end) {
+        countCyclesStart = start;
+        countCyclesEnd = end;
+    }
+
     public void startLoad(File f) {
         uart.loadPrg(f);
+    }
+
+    public void setSaveSsd(boolean val) {
+        ssd.setSaveEnabled(val);
     }
 
     public void onExit() {
@@ -654,7 +688,6 @@ public class KiT extends JPanel {
     }
 
     public static void main(String[] args) {
-        
 
         // System.out.println("RAM:");
         // for (int j = 0xFD; j < 0x0120; j++) {
@@ -662,11 +695,22 @@ public class KiT extends JPanel {
         // }
 
         KiT kit = new KiT();
+        kit.setSaveSsd(!hasArg(args, "--no-save-ssd"));
 
         if (isHeadlessMode(args)) {
             kit.setTurboMode(true);
             kit.setDumpScreenHex(hasArg(args, "--dump-screen-hex"));
-            loadDefaultPrg(kit);
+            String cycleRange = getArgValue(args, "--count-cycles", null);
+            if (cycleRange != null) {
+                String[] bounds = cycleRange.split("-");
+                kit.setCountCyclesRange(Integer.parseInt(bounds[0], 16), Integer.parseInt(bounds[1], 16));
+            }
+            File prg = new File(getArgValue(args, "--prg", DEFAULT_LOAD_FILE.getPath()));
+            if (!prg.isFile()) {
+                System.out.println("Error: couldn't find load file " + prg);
+                System.exit(1);
+            }
+            kit.startLoad(prg);
             kit.startHeadlessKeys(getHeadlessKeys(args));
             kit.startHeadlessTimeout(getLongArgValue(args, "--timeout-ms", 0));
             kit.run(true);
