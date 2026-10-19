@@ -1646,6 +1646,23 @@ public class CPU {
         }
     }
 
+    // 65C02 jmp (abs,x): jump through a table of addresses
+    class JMPAbsoluteXIndirect extends Instruction {
+        JMPAbsoluteXIndirect() {
+            super("jmp", AddressingMode.ABSOLUTE_X, 0x7C, 3, 6);
+        }
+
+        @Override
+        public void exec() {
+            incPC();
+            int addrLo = bus.read(PC);
+            incPC();
+            int addrHi = bus.read(PC);
+            int ptr = (addrHi * 0x100 + addrLo + X) & 0xFFFF;
+            PC = bus.read(ptr) + bus.read((ptr + 1) & 0xFFFF) * 0x100;
+        }
+    }
+
 
     class JSR extends Instruction {
         JSR() {
@@ -2115,7 +2132,7 @@ public class CPU {
             new CPXImmediate(), new CPXZeropage(), new CPXAbsolute(),
             new CPYImmediate(), new CPYZeropage(), new CPYAbsolute(),
             new BEQ(), new BNE(), new BCC(), new BCS(), new BMI(), new BPL(), new BVC(), new BVS(), new BRA(),
-            new JMPAbsolute(), new JMPIndirect(),
+            new JMPAbsolute(), new JMPIndirect(), new JMPAbsoluteXIndirect(),
             new JSR(), new RTS(),
             new RTI(),
             new NOP(),

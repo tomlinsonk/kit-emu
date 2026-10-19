@@ -51,6 +51,8 @@ public class KiT extends JPanel {
     private final static int SSD_END = 0x8FFF;
 
     private final static int ROM_HIDDEN_START = 0x8000;
+
+    private final static double NS_PER_CYCLE = 1e9 / 1_843_200;
     private final static int ROM_START = 0x9000;
     private final static int ROM_END = 0xFFFF;
 
@@ -65,6 +67,7 @@ public class KiT extends JPanel {
 
     // Dummy components
     private UART uart;
+
     private SID sid;
 
     private boolean doReset;
@@ -403,12 +406,13 @@ public class KiT extends JPanel {
                 long checkpointTime = 0;
                 long checkpointCycles = 0;
 
-                long nsElapsed;
+                double schedule = System.nanoTime();     // when the current cycle should happen
                 while (true) {
                     synchronized (pauseLock) {
                         if (doReset) {
                             via1.reset();
                             via2.reset();
+                            sid.reset();
                             cpu.reset();
                             doReset = false;
                             prevCycleCount = 0;
@@ -439,16 +443,24 @@ public class KiT extends JPanel {
 
                     cycleCount = cpu.getCycleCount();
                     newCycles = (int)(cycleCount - prevCycleCount);
-                    nsElapsed = 480 * newCycles;
 
                     if (stepPC >= countCyclesStart && stepPC <= countCyclesEnd) {
                         countedCycles += newCycles;
                     }
                     
+                    sid.clock(newCycles);
+
                     if (!turboMode) {
-                        while ((System.nanoTime() - currTime) < nsElapsed) { 
+                        // Run at the KiT's 1.8432 MHz
+                        schedule += newCycles * NS_PER_CYCLE;
+                        if (currTime - schedule > 20_000_000) {
+                            schedule = currTime;                // fell far behind (e.g. a GC pause): don't race to catch up
+                        }
+                        while (System.nanoTime() < schedule) {
                             continue;
                         }
+                    } else {
+                        schedule = System.nanoTime();
                     }
 
                     prevCycleCount = cycleCount;
@@ -650,6 +662,25 @@ public class KiT extends JPanel {
         ssd.setSaveEnabled(val);
     }
 
+    /** Set up the SID from the command line: --sid-model 8580, --record-sid out.wav, --no-sound */
+    private void configureSid(String[] args, boolean headless) {
+        sid.setModel8580("8580".equals(getArgValue(args, "--sid-model", "6581")));
+
+        String wavPath = getArgValue(args, "--record-sid", null);
+        if (wavPath != null) {
+            try {
+                sid.startRecording(wavPath);
+            } catch (java.io.IOException e) {
+                System.out.println("Error: couldn't write " + wavPath + ": " + e.getMessage());
+                System.exit(1);
+            }
+        }
+
+        if (!headless && !hasArg(args, "--no-sound")) {
+            sid.startAudio();
+        }
+    }
+
     public void onExit() {
         ssd.writeFile();
         System.exit(0);
@@ -696,6 +727,7 @@ public class KiT extends JPanel {
 
         KiT kit = new KiT();
         kit.setSaveSsd(!hasArg(args, "--no-save-ssd"));
+        kit.configureSid(args, isHeadlessMode(args));
 
         if (isHeadlessMode(args)) {
             kit.setTurboMode(true);

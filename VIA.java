@@ -62,18 +62,15 @@ public class VIA implements Interrupter, BusListener {
 
     @Override
     public boolean hasIRQ() {
-        return (registers[IFR] & ANY_INT) != 0;
+        return (registers[IFR] & registers[IER] & 0x7F) != 0;
     }
 
     public void kbByte(int val) {
         // System.out.println("VIA kb byte:" + val);
         portAVal = val;
-        
-        // If CA1 interrupt is enabled
-        if ((registers[IER] & CA1_INT) != 0) {
-            // Set the interrupt flags
-            registers[IFR] = registers[IFR] | ANY_INT | CA1_INT;
-        }
+
+        // Flags latch whether or not the interrupt is enabled; IER only gates the IRQ line
+        registers[IFR] |= CA1_INT;
     }
 
     @Override
@@ -84,7 +81,13 @@ public class VIA implements Interrupter, BusListener {
 
         if (bus.readBitSet()) {
             updateRegisters();
-            bus.setData(this.registers[registerAddr]);
+            if (registerAddr == IFR) {
+                bus.setData(registers[IFR] | (hasIRQ() ? ANY_INT : 0));
+            } else if (registerAddr == IER) {
+                bus.setData(registers[IER] | 0x80);
+            } else {
+                bus.setData(this.registers[registerAddr]);
+            }
         } else {
             int val = bus.getData();
 
@@ -104,6 +107,15 @@ public class VIA implements Interrupter, BusListener {
                 registers[T2C_H] = val;
                 t2Counting = true;
                 t2Counter = (registers[T2C_H] << 8) | registers[T2C_L];
+            } else if (registerAddr == IER) {
+                // Bit 7 set: enable the given interrupts. Bit 7 clear: disable them.
+                if ((val & INT_ENABLE) != 0) {
+                    registers[IER] |= val & 0x7F;
+                } else {
+                    registers[IER] &= ~val & 0x7F;
+                }
+            } else if (registerAddr == IFR) {
+                registers[IFR] &= ~val & 0x7F;         // writing a 1 clears that flag
             } else {
                 registers[registerAddr] = val;
             }
@@ -123,18 +135,14 @@ public class VIA implements Interrupter, BusListener {
                     t1Counter = 0;
                 }
 
-                if ((registers[IER] & T1_INT) != 0) {
-                    registers[IFR] = registers[IFR] | ANY_INT | T1_INT;
-                }
+                registers[IFR] |= T1_INT;
             }
         }
 
         if (t2Counting) {
             t2Counter -= newCycles;
             if (t2Counter <= 0) {
-                if ((registers[IER] & T2_INT) != 0) {
-                    registers[IFR] = registers[IFR] | ANY_INT | T2_INT;
-                }
+                registers[IFR] |= T2_INT;
                 t2Counting = false;
                 t2Counter = 0;
             }
@@ -194,9 +202,6 @@ public class VIA implements Interrupter, BusListener {
             registers[IFR] &= 0b10111111;
         }
 
-        if ((registers[IFR] & 0b01111111) == 0) {
-            registers[IFR] = 0;
-        }
     }
 
     public int getPortA() {
@@ -220,7 +225,10 @@ public class VIA implements Interrupter, BusListener {
 
     @Override
     public int debugRead(int addr) {
-        return this.registers[addr & 0x0F];
+        int reg = addr & 0x0F;
+        if (reg == IFR) return registers[IFR] | (hasIRQ() ? ANY_INT : 0);
+        if (reg == IER) return registers[IER] | 0x80;
+        return this.registers[reg];
     }
 
     // public static void main(String[] args) {

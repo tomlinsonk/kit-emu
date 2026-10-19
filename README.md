@@ -1,5 +1,5 @@
 # Emulator for the KiT 6502 Computer
-This is an emulator for the KiT 6502-based computer I've built. The emulator has all the functionality of the real hardware except sound and NES controller input (neither currently planned).
+This is an emulator for the KiT 6502-based computer I've built. The emulator has all the functionality of the real hardware except NES controller input (not currently planned).
 
 For more info on the KiT, see https://www.cs.cornell.edu/~kt/categories/6502/.
 
@@ -14,7 +14,7 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `Graphics.java`: emulates the MC6847-based KiT graphics card.
 - `VIA.java`: emulates the 65C22 VIA chip. Can request interrupts.
 - `SSD.java`: emulates a 256 Kb SSD using the SST39SF020A flash chip
-- `SID.java`: a dummy class that occupies the SID sound card's address space but does nothing (just exists so programs with sound work on the emulator, but no sound plays)
+- `SID.java`: emulates the SID sound chip (6581 by default), clocked at 1.8432 MHz like the KiT's, so notes play at the same pitch as on the hardware. Plays through your computer's audio output.
 - `ssd.bin`: the binary contents of the SSD, loaded on start and saved on exit
 
 ## Instructions
@@ -33,6 +33,20 @@ Options:
 - `--count-cycles 1000-4fff`: also print `Cycles: N`, the CPU cycles spent on instructions in that address range (hex, inclusive). Interrupt handlers and the monitor run in ROM, so they're excluded when the range covers only the program.
 
 `--no-save-ssd` (headless or GUI) keeps `ssd.bin` unchanged on exit; SSD writes only last for that run.
+
+### Sound
+The SID plays through your default audio output. Options (headless or GUI):
+- `--sid-model 8580`: emulate an 8580 instead of a 6581 (they sound different, especially the filter)
+- `--record-sid out.wav`: also record everything the SID plays to a WAV file
+- `--no-sound`: don't play sound
+
+Headless mode never plays sound, but can record it. For example, to record 30 seconds of a SID tune:
+
+```
+java -Djava.awt.headless=true KiT --headless --prg ../6502-software/prgs/sid/zero_page_heroes.prg --timeout-ms 5000 --record-sid zph.wav
+```
+
+Headless mode runs in turbo, so the recording covers more than the timeout.
 
 ## Planned features
 Crossed out = done!
