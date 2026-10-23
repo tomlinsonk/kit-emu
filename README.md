@@ -35,18 +35,15 @@ Options:
 `--no-save-ssd` (headless or GUI) keeps `ssd.bin` unchanged on exit; SSD writes only last for that run.
 
 ### Sound
-The SID plays through your default audio output. Options (headless or GUI):
-- `--sid-model 8580`: emulate an 8580 instead of a 6581 (they sound different, especially the filter)
+
+I made a sound card for the KiT a while back and assumed it would be hardware-only, since emulating a SID seemed beyond my ability and knowledge. Realistically, it would never have happened. So... I asked Claude Opus to do it. Behold, `SID.java`. And, while I was at it, I had Claude code up a C64 `.sid` to KiT program converter, along with a music player for the KiT. So now I can listen to Wizball (by [Martin Galway(https://en.wikipedia.org/wiki/Martin_Galway)) and Monty on the Run (by [Rob Hubbard](https://en.wikipedia.org/wiki/Martin_Galway)) on the KiT, and the KiT emulator. Incredible. 
+
+To try it out, run `F10` to run the SID-play program, select a tune with up and down arrow, and play with enter.
+
+Command line options (headless or GUI):
+- `--sid-model 8580`: emulate an 8580 instead of a 6581
 - `--record-sid out.wav`: also record everything the SID plays to a WAV file
 - `--no-sound`: don't play sound
-
-Headless mode never plays sound, but can record it. For example, to record 30 seconds of a SID tune:
-
-```
-java -Djava.awt.headless=true KiT --headless --prg ../6502-software/prgs/sid/zero_page_heroes.prg --timeout-ms 5000 --record-sid zph.wav
-```
-
-Headless mode runs in turbo, so the recording covers more than the timeout.
 
 ## Planned features
 Crossed out = done!
