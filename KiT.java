@@ -33,6 +33,7 @@ import java.awt.event.KeyEvent;
 public class KiT extends JPanel {
 
     private final static String DEFAULT_HEADLESS_KEYS = "l\nr\n";
+    private final static int CLOCK_CHECK_INTERVAL = 4096;
 
     private final static int RAM_START = 0x0000;
     private final static int RAM_END = 0x5FFF;
@@ -83,7 +84,7 @@ public class KiT extends JPanel {
     private Graphics graphics;
 
     private JLabel clockLabel;
-    private boolean turboMode;
+    private volatile boolean turboMode;
     private boolean dumpScreenHex;
 
     // Cycles spent executing instructions in [countCyclesStart, countCyclesEnd] (off by default)
@@ -405,15 +406,16 @@ public class KiT extends JPanel {
         new Thread(new Runnable() {
 			@Override
 			public void run() {
-				long currTime;
                 long prevCycleCount = 0;
                 long cycleCount = 0;
                 int newCycles;
 
                 long checkpointTime = 0;
                 long checkpointCycles = 0;
+                int clockCheckCountdown = CLOCK_CHECK_INTERVAL;
 
-                double schedule = System.nanoTime();     // when the current cycle should happen
+                double schedule = 0;                     // when the current cycle should happen
+                boolean wasTurbo = true;
                 while (true) {
                     synchronized (pauseLock) {
                         if (doReset) {
@@ -443,7 +445,12 @@ public class KiT extends JPanel {
                         }
                     }
 
-                    currTime = System.nanoTime();
+                    boolean turbo = turboMode;
+                    long currTime = turbo ? 0 : System.nanoTime();
+                    if (!turbo && wasTurbo) {
+                        schedule = currTime;
+                    }
+                    wasTurbo = turbo;
 
                     int stepPC = cpu.getPC();
                     cpu.step();
@@ -457,7 +464,7 @@ public class KiT extends JPanel {
                     
                     sid.clock(newCycles);
 
-                    if (!turboMode) {
+                    if (!turbo) {
                         // Run at the KiT's 1.8432 MHz
                         schedule += newCycles * NS_PER_CYCLE;
                         if (currTime - schedule > 20_000_000) {
@@ -466,8 +473,6 @@ public class KiT extends JPanel {
                         while (System.nanoTime() < schedule) {
                             continue;
                         }
-                    } else {
-                        schedule = System.nanoTime();
                     }
 
                     prevCycleCount = cycleCount;
@@ -476,11 +481,15 @@ public class KiT extends JPanel {
                     via1.updateCycleCount(newCycles);
                     via2.updateCycleCount(newCycles);
 
-                    if (clockLabel != null && currTime - checkpointTime > 2_000_000_000) {
-                        clockLabel.setText(String.format("%.2f MHz", ((cycleCount - checkpointCycles) / 2_000_000.0)));
-                        
-                        checkpointTime = currTime;
-                        checkpointCycles = cycleCount;
+                    if (clockLabel != null && --clockCheckCountdown == 0) {
+                        clockCheckCountdown = CLOCK_CHECK_INTERVAL;
+                        if (turbo) currTime = System.nanoTime();
+                        if (currTime - checkpointTime > 2_000_000_000) {
+                            clockLabel.setText(String.format("%.2f MHz", ((cycleCount - checkpointCycles) / 2_000_000.0)));
+
+                            checkpointTime = currTime;
+                            checkpointCycles = cycleCount;
+                        }
                     }
                 }
 			}

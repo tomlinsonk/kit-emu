@@ -19,6 +19,7 @@ public class AddressDecoder {
     }
 
     private ArrayList<Device> devices;
+    private final BusListener[] addressMap = new BusListener[0x10000];
 
     AddressDecoder() {
         devices = new ArrayList<>();
@@ -32,24 +33,27 @@ public class AddressDecoder {
         }
 
         this.devices.add(newDevice);
+        for (int addr = Math.max(0, startAddr); addr <= Math.min(0xFFFF, endAddr); addr++) {
+            if (addressMap[addr] == null) {
+                addressMap[addr] = device;
+            }
+        }
     }
 
     public void decode(int addr) {
-        for (Device d : devices) {
-            if (addr >= d.startAddr && addr <= d.endAddr) {
-                d.device.activate();
-                return;
-            }
+        BusListener device = addr >= 0 && addr < addressMap.length ? addressMap[addr] : null;
+        if (device != null) {
+            device.activate();
+            return;
         }
 
         assert false: "Can't decode address $" + Integer.toHexString(addr);
     }
 
     public int debugRead(int addr) {
-        for (Device d : devices) {
-            if (addr >= d.startAddr && addr <= d.endAddr) {
-                return d.device.debugRead(addr);
-            }
+        BusListener device = addr >= 0 && addr < addressMap.length ? addressMap[addr] : null;
+        if (device != null) {
+            return device.debugRead(addr);
         }
 
         assert false: "Can't decode address $" + Integer.toHexString(addr);

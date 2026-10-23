@@ -21,6 +21,8 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 ## Instructions
 From the repository root, run `javac *.java` and `java KiT`. The emulator loads `video_mon.bin` and reads and saves `ssd.bin` in that directory. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
+Select Realtime to run at 1.8432 MHz or Turbo to run as fast as possible. Headless mode uses Turbo automatically.
+
 ### Local configuration
 
 You can add `kit-emu.properties` in the repository root (ignored by Git) to configure some file loading defaults for `L`:
