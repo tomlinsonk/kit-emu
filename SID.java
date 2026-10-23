@@ -13,7 +13,9 @@ import javax.sound.sampled.SourceDataLine;
  * delay bug behave like hardware), and a state-variable model of the analog filter.
  * The output is averaged down to 44.1 kHz, played through Java Sound, and can also be
  * recorded to a WAV file. With no sound output, the chip only runs when a program reads
- * the oscillator 3 or envelope 3 register (e.g. for random numbers).
+ * the oscillator 3 or envelope 3 register (e.g. for random numbers). When all envelopes
+ * are held at zero and the filter is at rest and bypassed, synthesis is skipped while
+ * oscillator state and the audio sample timeline are maintained.
  */
 public class SID implements BusListener {
 
@@ -263,8 +265,58 @@ public class SID implements BusListener {
             pendingCycles += cycles;
             return;
         }
+        if (holdZero[0] && holdZero[1] && holdZero[2]
+                && (filt & 0x07) == 0 && vlp == 0 && vbp == 0) {
+            clockIdle(cycles);
+            return;
+        }
         for (int i = 0; i < cycles; i++) {
             clockOne(true);
+        }
+    }
+
+    private void clockIdle(int cycles) {
+        if (cycles <= 0) return;
+
+        boolean stopped = true;
+        for (int v = 0; v < 3; v++) {
+            if (freq[v] != 0 && (ctrl[v] & TEST) == 0) {
+                stopped = false;
+                break;
+            }
+        }
+        if (stopped) {
+            for (int v = 0; v < 3; v++) {
+                msbRising[v] = false;
+                // Held-zero envelopes still clock their rate counters, including the ADSR delay bug.
+                int untilRate = ratePeriod[v] - rateCounter[v];
+                if (untilRate <= 0) untilRate += 0x7FFF;
+                if (cycles < untilRate) {
+                    rateCounter[v] += cycles;
+                    if (rateCounter[v] > 0x7FFF) rateCounter[v] -= 0x7FFF;
+                } else {
+                    rateCounter[v] = (cycles - untilRate) % ratePeriod[v];
+                }
+            }
+        } else {
+            for (int i = 0; i < cycles; i++) {
+                clockOne(false);
+            }
+        }
+
+        double mix = (((modeVol & 0x80) == 0 ? 3 : 2) * voiceDC + mixerDC) * (modeVol & 0x0F);
+        while (cycles > 0) {
+            int count = Math.min(cycles, (int) Math.ceil(untilSample));
+            sampleSum += mix * count;
+            sampleCount += count;
+            untilSample -= count;
+            cycles -= count;
+            if (untilSample <= 0) {
+                untilSample += CYCLES_PER_SAMPLE;
+                emitSample(sampleSum / sampleCount);
+                sampleSum = 0;
+                sampleCount = 0;
+            }
         }
     }
 
