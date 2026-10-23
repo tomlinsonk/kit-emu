@@ -15,18 +15,28 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `VIA.java`: emulates the 65C22 VIA chip. Can request interrupts.
 - `SSD.java`: emulates a 256 Kb SSD using the SST39SF020A flash chip
 - `SID.java`: emulates the SID sound chip (6581 by default), clocked at 1.8432 MHz like the KiT's, so notes play at the same pitch as on the hardware. Plays through your computer's audio output.
+- `video_mon.bin`: the monitor ROM image, loaded on start
 - `ssd.bin`: the binary contents of the SSD, loaded on start and saved on exit
 
 ## Instructions
-To run the emulator, just do `javac *.java` and `java KiT`. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
+From the repository root, run `javac *.java` and `java KiT`. The emulator loads `video_mon.bin` and reads and saves `ssd.bin` in that directory. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
-(Looking back on this, I hardcoded some paths that you'll need to update.... TODO: make these configurable.)
+### Local configuration
+
+You can add `kit-emu.properties` in the repository root (ignored by Git) to configure some file loading defaults for `L`:
+
+```properties
+defaultProgram=/path/to/program.prg
+fileChooserDir=/path/to/programs
+```
 
 ### Headless mode
-For compiler test automation, run `java -Djava.awt.headless=true KiT --headless` (the `-D` flag keeps macOS from opening it as an app and stealing focus). Headless mode loads a `.prg` over the emulated serial port, types `l`, Enter, `r`, Enter into the monitor, and runs until the program hits the emulator breakpoint instruction (`0xBB`). It then prints the CPU status and the screen text and exits with status 0.
+I added a headless mode to run the emulator with no GUI, so I could test my C compiler :)
+
+Run `java -Djava.awt.headless=true KiT --headless --prg [.prg file]`. Headless mode loads the `.prg` file over the UART, types `l\nr\n` into the monitor to load and run that program until the program hits the emulator breakpoint instruction (`0xBB`). It then prints the CPU status and the screen text and exits with status 0.
 
 Options:
-- `--prg path/to/file.prg`: program to load (default: `/Users/tomlinsonk/projects/6502/kcc/out.prg`)
+- `--prg path/to/file.prg`: program to load (overrides `defaultProgram` in `kit-emu.properties`)
 - `--timeout-ms 5000`: dump state and exit with status 2 if no breakpoint is reached in time
 - `--keys "l\nr\ns\n"`: override the scripted monitor input
 - `--dump-screen-hex`: also print the raw text VRAM bytes

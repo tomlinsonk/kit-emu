@@ -37,8 +37,7 @@ public class SSD implements BusListener {
 
         byte[] ssdData;
         try {
-            // romData = Files.readAllBytes(Paths.get("/Users/tomlinsonk/projects/6502/6502-software/roms/emu-test/emu-test.bin"));
-            ssdData = Files.readAllBytes(Paths.get("/Users/tomlinsonk/projects/6502/kit-emu/ssd.bin"));
+            ssdData = Files.readAllBytes(Paths.get("ssd.bin"));
 
             for (int i = 0; i < ssdData.length; i++) {
                 this.data[i] = ssdData[i] & 0xFF;
@@ -117,7 +116,7 @@ public class SSD implements BusListener {
             bytes[i] = (byte)data[i];
         }
 
-        try (FileOutputStream stream = new FileOutputStream("/Users/tomlinsonk/projects/6502/kit-emu/ssd.bin")) {
+        try (FileOutputStream stream = new FileOutputStream("ssd.bin")) {
             stream.write(bytes);
         } catch (IOException e) {
             e.printStackTrace();

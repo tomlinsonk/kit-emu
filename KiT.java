@@ -15,6 +15,12 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
+import java.util.Properties;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -26,7 +32,6 @@ import java.awt.event.KeyEvent;
 
 public class KiT extends JPanel {
 
-    private final static File DEFAULT_LOAD_FILE = new File("/Users/tomlinsonk/projects/6502/kcc/out.prg");
     private final static String DEFAULT_HEADLESS_KEYS = "l\nr\n";
 
     private final static int RAM_START = 0x0000;
@@ -69,6 +74,8 @@ public class KiT extends JPanel {
     private UART uart;
 
     private SID sid;
+
+    private File defaultLoadFile;
 
     private boolean doReset;
     private boolean debugging;
@@ -567,11 +574,23 @@ public class KiT extends JPanel {
     }
 
     private static void loadDefaultPrg(KiT kit) {
-        if (DEFAULT_LOAD_FILE.isFile()) {
-            kit.startLoad(DEFAULT_LOAD_FILE);
+        if (kit.defaultLoadFile == null) return;
+
+        if (kit.defaultLoadFile.isFile()) {
+            kit.startLoad(kit.defaultLoadFile);
         } else {
-            System.out.println("Warning: couldn't find load file " + DEFAULT_LOAD_FILE + ". Update DEFAULT_LOAD_FILE in KiT.java to load a .prg file");
+            System.out.println("Warning: couldn't find load file " + kit.defaultLoadFile + ". Update defaultProgram in kit-emu.properties");
         }
+    }
+
+    private static Properties loadConfig() throws IOException {
+        Properties config = new Properties();
+        try (Reader reader = Files.newBufferedReader(Paths.get("kit-emu.properties"))) {
+            config.load(reader);
+        } catch (NoSuchFileException e) {
+            // The local config is optional.
+        }
+        return config;
     }
 
     private static boolean isHeadlessMode(String[] args) {
@@ -720,12 +739,33 @@ public class KiT extends JPanel {
 
     public static void main(String[] args) {
 
-        // System.out.println("RAM:");
-        // for (int j = 0xFD; j < 0x0120; j++) {
-        //     System.out.println(j + ": " + ram.get(j));
-        // }
+        Properties config;
+        try {
+            config = loadConfig();
+        } catch (IOException | IllegalArgumentException e) {
+            System.err.println("Error: couldn't read kit-emu.properties: " + e.getMessage());
+            System.exit(1);
+            return;
+        }
+
+        String defaultProgram = config.getProperty("defaultProgram", "").trim();
+        String chooserPath = config.getProperty("fileChooserDir", "").trim();
+        File chooserDir = new File(chooserPath.isEmpty() ? "." : chooserPath);
+        if (!isHeadlessMode(args) && !chooserDir.isDirectory()) {
+            System.err.println("Error: fileChooserDir is not a directory: " + chooserDir);
+            System.exit(1);
+            return;
+        }
+
+        String program = getArgValue(args, "--prg", defaultProgram);
+        if (isHeadlessMode(args) && program.trim().isEmpty()) {
+            System.err.println("Error: headless mode requires --prg path/to/file.prg or defaultProgram in kit-emu.properties");
+            System.exit(1);
+            return;
+        }
 
         KiT kit = new KiT();
+        kit.defaultLoadFile = defaultProgram.isEmpty() ? null : new File(defaultProgram);
         kit.setSaveSsd(!hasArg(args, "--no-save-ssd"));
         kit.configureSid(args, isHeadlessMode(args));
 
@@ -737,7 +777,7 @@ public class KiT extends JPanel {
                 String[] bounds = cycleRange.split("-");
                 kit.setCountCyclesRange(Integer.parseInt(bounds[0], 16), Integer.parseInt(bounds[1], 16));
             }
-            File prg = new File(getArgValue(args, "--prg", DEFAULT_LOAD_FILE.getPath()));
+            File prg = new File(program);
             if (!prg.isFile()) {
                 System.out.println("Error: couldn't find load file " + prg);
                 System.exit(1);
@@ -777,7 +817,7 @@ public class KiT extends JPanel {
         loadButton.setBounds(0,0,95,30);  
         loadButton.addActionListener(new ActionListener() {  
             public void actionPerformed(ActionEvent e){  
-                JFileChooser chooser= new JFileChooser("/Users/tomlinsonk/projects/6502/6502-software/prgs");
+                JFileChooser chooser= new JFileChooser(chooserDir);
 
                 int choice = chooser.showOpenDialog(null);
 
