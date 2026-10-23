@@ -1,7 +1,7 @@
 # Emulator for the KiT 6502 Computer
-This is an emulator for the KiT 6502-based computer I've built. The emulator has all the functionality of the real hardware except NES controller input (not currently planned).
+This is an emulator for the KiT 6502-based computer I've built. The emulator has all the functionality of the real hardware! Sound, graphics, simulated serial port, the works :)
 
-For more info on the KiT, see https://www.cs.cornell.edu/~kt/categories/6502/.
+For more info on the KiT, see https://www.kirantomlinson.com/category/6502/.
 
 ## Emulator architecture
 
