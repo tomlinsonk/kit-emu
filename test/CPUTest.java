@@ -1,10 +1,7 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 /**
  * CPU tests: Klaus Dormann's 6502/65C02 functional test suites, Bruce Clark's
@@ -14,13 +11,13 @@ import java.nio.file.StandardCopyOption;
  *   javac -d test/build *.java test/CPUTest.java
  *   java -cp test/build CPUTest
  *
- * Klaus Dormann's binaries (GPL-3.0) are downloaded into test/bin on first run.
+ * Klaus Dormann's binaries (GPL-3.0) come from the test/klaus git submodule:
+ *   git submodule update --init
  */
 public class CPUTest {
 
-    private static final String KLAUS_URL = "https://raw.githubusercontent.com/Klaus2m5/6502_65C02_functional_tests/master/bin_files/";
     private static final Path TEST_DIR = Paths.get("test");
-    private static final Path BIN_DIR = TEST_DIR.resolve("bin");
+    private static final Path KLAUS_DIR = TEST_DIR.resolve("klaus").resolve("bin_files");
     private static final long MAX_STEPS = 500_000_000L;
 
     private static int failures = 0;
@@ -64,13 +61,9 @@ public class CPUTest {
     }
 
     private static Path klausBin(String name) throws IOException {
-        Path path = BIN_DIR.resolve(name);
+        Path path = KLAUS_DIR.resolve(name);
         if (!Files.isRegularFile(path)) {
-            Files.createDirectories(BIN_DIR);
-            System.out.println("Downloading " + name + "...");
-            try (InputStream in = URI.create(KLAUS_URL + name).toURL().openStream()) {
-                Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
-            }
+            throw new IOException(path + " not found. Run: git submodule update --init");
         }
         return path;
     }

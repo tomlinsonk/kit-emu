@@ -32,7 +32,7 @@ javac -d test/build *.java test/CPUTest.java
 java -cp test/build CPUTest
 ```
 
-This runs Klaus Dormann's [6502 functional test and 65C02 extended opcodes test](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-licensed, so they're downloaded to 	est/bin/ on first run instead of being committed), Bruce Clark's 65C02 decimal mode test (	est/65C02_decimal_test.bin), and checks for cycle counts, IRQ, reset, WAI and STP.
+This runs Klaus Dormann's [6502 functional test and 65C02 extended opcodes test](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-licensed, included as the `test/klaus` git submodule, so clone with `--recursive` or run `git submodule update --init`), Bruce Clark's 65C02 decimal mode test (`test/65C02_decimal_test.bin`), and checks for cycle counts, IRQ, reset, WAI and STP.
 
 ### Local configuration
 
