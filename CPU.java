@@ -343,25 +343,25 @@ public class CPU {
 
     class STZZeropage extends STZ {
         STZZeropage() {
-            super("stz", AddressingMode.ZEROPAGE, 0x64, 2, 4);
+            super("stz", AddressingMode.ZEROPAGE, 0x64, 2, 3);
         }
     }
 
     class STZZeropageX extends STZ {
         STZZeropageX() {
-            super("stz", AddressingMode.ZEROPAGE_X, 0x74, 2, 5);
+            super("stz", AddressingMode.ZEROPAGE_X, 0x74, 2, 4);
         }
     }
 
     class STZAbsolute extends STZ {
         STZAbsolute() {
-            super("stz", AddressingMode.ABSOLUTE, 0x9c, 3, 5);
+            super("stz", AddressingMode.ABSOLUTE, 0x9c, 3, 4);
         }
     }
 
     class STZAbsoluteX extends STZ {
         STZAbsoluteX() {
-            super("stz", AddressingMode.ABSOLUTE_X, 0x9e, 3, 6);
+            super("stz", AddressingMode.ABSOLUTE_X, 0x9e, 3, 5);
         }
     }
 
@@ -429,7 +429,6 @@ public class CPU {
         @Override
         public void exec() {
             S = X;
-            updateNZ(S);
             incPC();    
         }
     }
@@ -731,19 +730,56 @@ public class CPU {
         }
 
         public void exec() {
-            assert !D : "Decimal mode not supported!";
-
             int val = getLoadVal(this.addrMode);
-            boolean valSign = val > 127;
-            boolean ASign = A > 127;
-            
-            A = A + val + (C ? 1 : 0);
-            C = A > 255;
-            A = A & 0xFF;
-            updateNZ(A);
-            V = (valSign == ASign) && (valSign != (A > 127));
+            if (D) {
+                adcDecimal(val);
+            } else {
+                adcBinary(val);
+            }
             incPC();
         }
+    }
+
+    private void adcBinary(int val) {
+        boolean valSign = val > 127;
+        boolean ASign = A > 127;
+
+        A = A + val + (C ? 1 : 0);
+        C = A > 255;
+        A = A & 0xFF;
+        updateNZ(A);
+        V = (valSign == ASign) && (valSign != (A > 127));
+    }
+
+    // 65C02 decimal mode (see http://www.6502.org/tutorials/decimal_mode.html): N and Z reflect the BCD result, 1 extra cycle
+    private void adcDecimal(int val) {
+        int lo = (A & 0x0F) + (val & 0x0F) + (C ? 1 : 0);
+        if (lo >= 0x0A) lo = ((lo + 0x06) & 0x0F) + 0x10;
+
+        int signed = (byte)(A & 0xF0) + (byte)(val & 0xF0) + lo;
+        V = signed < -128 || signed > 127;
+
+        int result = (A & 0xF0) + (val & 0xF0) + lo;
+        if (result >= 0xA0) result += 0x60;
+        C = result > 0xFF;
+        A = result & 0xFF;
+        updateNZ(A);
+        extraCycles++;
+    }
+
+    private void sbcDecimal(int val) {
+        int borrow = C ? 0 : 1;
+        int lo = (A & 0x0F) - (val & 0x0F) - borrow;
+        int result = A - val - borrow;
+
+        // Flags C and V match binary mode
+        adcBinary(val ^ 0xFF);
+
+        if (result < 0) result -= 0x60;
+        if (lo < 0) result -= 0x06;
+        A = result & 0xFF;
+        updateNZ(A);
+        extraCycles++;
     }
 
     class ADCImmediate extends ADC {
@@ -801,18 +837,13 @@ public class CPU {
         }
 
         public void exec() {
-            assert !D : "Decimal mode not supported!";
-
-            // Take 1s complement of val and then perform an ADC
-            int val = getLoadVal(this.addrMode) ^ 0xFF;
-            boolean valSign = val > 127;
-            boolean ASign = A > 127;
-            
-            A = A + val + (C ? 1 : 0);
-            C = A > 255;
-            A = A & 0xFF;
-            updateNZ(A);
-            V = (valSign == ASign) && (valSign != (A > 127));
+            int val = getLoadVal(this.addrMode);
+            if (D) {
+                sbcDecimal(val);
+            } else {
+                // Take 1s complement of val and then perform an ADC
+                adcBinary(val ^ 0xFF);
+            }
             incPC();
         }
     }
@@ -1076,7 +1107,7 @@ public class CPU {
         }
 
         public void exec() {
-            int addr = getOperandAddress(this.addrMode);
+            int addr = getShiftAddress(this.addrMode);
             int val = bus.read(addr) << 1;
             C = val > 255;
             val = val & 0xFF;
@@ -1120,7 +1151,7 @@ public class CPU {
 
     class ASLAbsoluteX extends ASL {
         ASLAbsoluteX() {
-            super("asl", AddressingMode.ABSOLUTE_X, 0x1E, 3, 7);
+            super("asl", AddressingMode.ABSOLUTE_X, 0x1E, 3, 6);
         }
     }
 
@@ -1132,7 +1163,7 @@ public class CPU {
         }
 
         public void exec() {
-            int addr = getOperandAddress(this.addrMode);
+            int addr = getShiftAddress(this.addrMode);
             int val = bus.read(addr);
             C = (val & 1) == 1;
             val = val >> 1;
@@ -1175,7 +1206,7 @@ public class CPU {
 
     class LSRAbsoluteX extends LSR {
         LSRAbsoluteX() {
-            super("lsr", AddressingMode.ABSOLUTE_X, 0x5E, 3, 7);
+            super("lsr", AddressingMode.ABSOLUTE_X, 0x5E, 3, 6);
         }
     }
 
@@ -1186,7 +1217,7 @@ public class CPU {
         }
 
         public void exec() {
-            int addr = getOperandAddress(this.addrMode);
+            int addr = getShiftAddress(this.addrMode);
             int val = bus.read(addr);
             val = (val << 1) | (C ? 1 : 0);
             C = val > 255;
@@ -1231,7 +1262,7 @@ public class CPU {
 
     class ROLAbsoluteX extends ROL {
         ROLAbsoluteX() {
-            super("rol", AddressingMode.ABSOLUTE_X, 0x3E, 3, 7);
+            super("rol", AddressingMode.ABSOLUTE_X, 0x3E, 3, 6);
         }
     }
 
@@ -1242,7 +1273,7 @@ public class CPU {
         }
 
         public void exec() {
-            int addr = getOperandAddress(this.addrMode);
+            int addr = getShiftAddress(this.addrMode);
             int val = bus.read(addr);
             boolean oldC = C;
             C = (val & 1) == 1;
@@ -1287,7 +1318,7 @@ public class CPU {
 
     class RORAbsoluteX extends ROR {
         RORAbsoluteX() {
-            super("ror", AddressingMode.ABSOLUTE_X, 0x7E, 3, 7);
+            super("ror", AddressingMode.ABSOLUTE_X, 0x7E, 3, 6);
         }
     }
 
@@ -1522,8 +1553,20 @@ public class CPU {
     private void branch(boolean condition) {
         incPC();
         byte offset = (byte)bus.read(PC);
-        if (condition) PC = (PC + offset) & 0xFFFF;
         incPC();
+        if (condition) {
+            int target = (PC + offset) & 0xFFFF;
+            extraCycles += (target & 0xFF00) == (PC & 0xFF00) ? 1 : 2;
+            PC = target;
+        }
+    }
+
+    // BBR/BBS: fixed timing
+    private void bitBranch(boolean condition) {
+        incPC();
+        byte offset = (byte)bus.read(PC);
+        incPC();
+        if (condition) PC = (PC + offset) & 0xFFFF;
     }
 
     class BCC extends Instruction {
@@ -1608,7 +1651,7 @@ public class CPU {
 
     class BRA extends Instruction {
         BRA() {
-            super("bra", AddressingMode.RELATIVE, 0x80, 2, 3);
+            super("bra", AddressingMode.RELATIVE, 0x80, 2, 2);
         }
 
         public void exec() {
@@ -1642,7 +1685,7 @@ public class CPU {
 
     class JMPIndirect extends JMP {
         JMPIndirect() {
-            super("jmp", AddressingMode.INDIRECT, 0x6C, 3, 5);
+            super("jmp", AddressingMode.INDIRECT, 0x6C, 3, 6);
         }
     }
 
@@ -1800,7 +1843,7 @@ public class CPU {
         public void exec() {
             incPC();
             int zpAddr = bus.read(PC);
-            branch((mask & bus.read(zpAddr)) == 0);
+            bitBranch((mask & bus.read(zpAddr)) == 0);
         }
     }
 
@@ -1863,7 +1906,7 @@ public class CPU {
         public void exec() {
             incPC();
             int zpAddr = bus.read(PC);
-            branch((mask & bus.read(zpAddr)) != 0);
+            bitBranch((mask & bus.read(zpAddr)) != 0);
         }
     }
 
@@ -2047,6 +2090,145 @@ public class CPU {
 
 
     /**
+     * Remaining 65C02 instructions
+     */
+    abstract class TSB extends Instruction {
+        TSB(AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super("tsb", addrMode, opcode, bytes, cycles);
+        }
+
+        public void exec() {
+            int addr = getOperandAddress(addrMode);
+            int val = bus.read(addr);
+            Z = (val & A) == 0;
+            bus.write(addr, val | A);
+            incPC();
+        }
+    }
+
+    class TSBZeropage extends TSB {
+        TSBZeropage() {
+            super(AddressingMode.ZEROPAGE, 0x04, 2, 5);
+        }
+    }
+
+    class TSBAbsolute extends TSB {
+        TSBAbsolute() {
+            super(AddressingMode.ABSOLUTE, 0x0C, 3, 6);
+        }
+    }
+
+    abstract class TRB extends Instruction {
+        TRB(AddressingMode addrMode, int opcode, int bytes, int cycles) {
+            super("trb", addrMode, opcode, bytes, cycles);
+        }
+
+        public void exec() {
+            int addr = getOperandAddress(addrMode);
+            int val = bus.read(addr);
+            Z = (val & A) == 0;
+            bus.write(addr, val & ~A & 0xFF);
+            incPC();
+        }
+    }
+
+    class TRBZeropage extends TRB {
+        TRBZeropage() {
+            super(AddressingMode.ZEROPAGE, 0x14, 2, 5);
+        }
+    }
+
+    class TRBAbsolute extends TRB {
+        TRBAbsolute() {
+            super(AddressingMode.ABSOLUTE, 0x1C, 3, 6);
+        }
+    }
+
+    class ORAZeropageIndirect extends ORA {
+        ORAZeropageIndirect() {
+            super("ora", AddressingMode.ZEROPAGE_INDIRECT, 0x12, 2, 5);
+        }
+    }
+
+    class ANDZeropageIndirect extends AND {
+        ANDZeropageIndirect() {
+            super("and", AddressingMode.ZEROPAGE_INDIRECT, 0x32, 2, 5);
+        }
+    }
+
+    class EORZeropageIndirect extends EOR {
+        EORZeropageIndirect() {
+            super("eor", AddressingMode.ZEROPAGE_INDIRECT, 0x52, 2, 5);
+        }
+    }
+
+    class ADCZeropageIndirect extends ADC {
+        ADCZeropageIndirect() {
+            super("adc", AddressingMode.ZEROPAGE_INDIRECT, 0x72, 2, 5);
+        }
+    }
+
+    class CMPZeropageIndirect extends CMP {
+        CMPZeropageIndirect() {
+            super("cmp", AddressingMode.ZEROPAGE_INDIRECT, 0xD2, 2, 5);
+        }
+    }
+
+    class SBCZeropageIndirect extends SBC {
+        SBCZeropageIndirect() {
+            super("sbc", AddressingMode.ZEROPAGE_INDIRECT, 0xF2, 2, 5);
+        }
+    }
+
+    class BITZeropageX extends BIT {
+        BITZeropageX() {
+            super(AddressingMode.ZEROPAGE_X, 0x34, 2, 4);
+        }
+    }
+
+    class BITAbsoluteX extends BIT {
+        BITAbsoluteX() {
+            super(AddressingMode.ABSOLUTE_X, 0x3C, 3, 4);
+        }
+    }
+
+    // Wait for an interrupt
+    class WAI extends Instruction {
+        WAI() {
+            super("wai", AddressingMode.IMPLIED, 0xCB, 1, 3);
+        }
+
+        public void exec() {
+            waiting = true;
+            incPC();
+        }
+    }
+
+    // Stop the clock until reset
+    class STP extends Instruction {
+        STP() {
+            super("stp", AddressingMode.IMPLIED, 0xDB, 1, 3);
+        }
+
+        public void exec() {
+            stopped = true;
+            incPC();
+        }
+    }
+
+    // Undefined opcodes are NOPs of various sizes and timings on the WDC 65C02
+    class UndefinedNOP extends Instruction {
+        UndefinedNOP(int opcode, int bytes, int cycles) {
+            super("nop", AddressingMode.IMPLIED, opcode, bytes, cycles);
+        }
+
+        public void exec() {
+            PC = (PC + bytes) & 0xFFFF;
+        }
+    }
+
+
+    /**
      * Debugging pseudo-instructions
      */
     class Breakpoint extends Instruction {
@@ -2085,7 +2267,13 @@ public class CPU {
 
     private long cycleCount;
 
+    // Cycles added by the current instruction (page crossings, taken branches, decimal mode)
+    private int extraCycles;
+    private boolean pageCrossed;
+
     private boolean paused;
+    private boolean waiting;
+    private boolean stopped;
 
     private Instruction lastInstruction;
 
@@ -2137,7 +2325,11 @@ public class CPU {
             new RTI(),
             new NOP(),
             new BRK(),
-            new BITAbsolute(), new BITZeropage(), new BITImmediate(),
+            new BITAbsolute(), new BITZeropage(), new BITImmediate(), new BITZeropageX(), new BITAbsoluteX(),
+            new TSBZeropage(), new TSBAbsolute(), new TRBZeropage(), new TRBAbsolute(),
+            new ORAZeropageIndirect(), new ANDZeropageIndirect(), new EORZeropageIndirect(),
+            new ADCZeropageIndirect(), new CMPZeropageIndirect(), new SBCZeropageIndirect(),
+            new WAI(), new STP(),
             new BBR0(), new BBR1(), new BBR2(), new BBR3(), new BBR4(), new BBR5(), new BBR6(), new BBR7(),
             new BBS0(), new BBS1(), new BBS2(), new BBS3(), new BBS4(), new BBS5(), new BBS6(), new BBS7(),
             new RMB0(), new RMB1(), new RMB2(), new RMB3(), new RMB4(), new RMB5(), new RMB6(), new RMB7(),
@@ -2148,6 +2340,30 @@ public class CPU {
         this.instructions = new Instruction[0x100];
         for (Instruction inst : allInstructions) {
             this.instructions[inst.opcode] = inst;
+        }
+
+        for (int opcode = 0; opcode < 0x100; opcode++) {
+            if (this.instructions[opcode] != null) continue;
+
+            int bytes = 1;
+            int cycles = 1;
+            if ((opcode & 0x0F) == 0x02) {
+                bytes = 2;
+                cycles = 2;
+            } else if (opcode == 0x44) {
+                bytes = 2;
+                cycles = 3;
+            } else if (opcode == 0x54 || opcode == 0xD4 || opcode == 0xF4) {
+                bytes = 2;
+                cycles = 4;
+            } else if (opcode == 0x5C) {
+                bytes = 3;
+                cycles = 8;
+            } else if (opcode == 0xDC || opcode == 0xFC) {
+                bytes = 3;
+                cycles = 4;
+            }
+            this.instructions[opcode] = new UndefinedNOP(opcode, bytes, cycles);
         }
     }
 
@@ -2171,6 +2387,10 @@ public class CPU {
         return PC;
     }
 
+    public void setPC(int pc) {
+        PC = pc & 0xFFFF;
+    }
+
     public int getS() {
         return S;
     }
@@ -2191,33 +2411,51 @@ public class CPU {
         paused = false;
     }
 
+    /** True after STP, until reset */
+    public boolean isStopped() {
+        return stopped;
+    }
+
     public void reset() {
         PC = bus.read(0xFFFC) + bus.read(0xFFFD) * 0x100;
-        I = false;
+        I = true;
         D = false;
         S = 0xFF;
         cycleCount = 0;
         paused = false;
+        waiting = false;
+        stopped = false;
     }
 
     public void step() {
-        if (bus.getIRQ() && !I) {
+        // STP and WAI halt instruction execution, but the clock keeps running (one cycle per step)
+        if (stopped) {
+            cycleCount++;
+            return;
+        }
+
+        boolean irq = bus.getIRQ();
+        if (waiting) {
+            if (!irq) {
+                cycleCount++;
+                return;
+            }
+            waiting = false;          // with I set, WAI resumes at the next instruction without servicing the IRQ
+        }
+
+        if (irq && !I) {
             doIRQ(false);
+            cycleCount += 7;
         } else {
             int opcode = bus.read(PC);
             Instruction inst = this.instructions[opcode];
 
-            if (inst == null) {
-                printStatus();
-            }
-            
-            assert inst != null : "Unsupported opcode " + String.format("0x%02x", opcode);
-    
             // System.out.println(inst.mnemonic);
-            cycleCount += inst.cycles;
+            extraCycles = 0;
             lastInstruction = inst;
 
             inst.exec();
+            cycleCount += inst.cycles + extraCycles;
         }
     }
 
@@ -2246,6 +2484,7 @@ public class CPU {
             operand =  addrLo + addrHi * 0x100;
         }
 
+        pageCrossed = false;
         switch (addrMode) {
             case ZEROPAGE:
                 return operand;
@@ -2256,27 +2495,36 @@ public class CPU {
             case ABSOLUTE:
                 return operand;
             case ABSOLUTE_X:
-                return (operand + X) & 0xFFFF;
+                return indexed(operand, X);
             case ABSOLUTE_Y:
-                return (operand + Y) & 0xFFFF;
+                return indexed(operand, Y);
             case X_INDIRECT:
                 int zpAddr = (operand + X) & 0xFF;
                 addrLo = bus.read(zpAddr);
-                addrHi = bus.read(zpAddr + 1);
+                addrHi = bus.read((zpAddr + 1) & 0xFF);
                 return addrLo + addrHi * 0x100;
             case INDIRECT_Y:
                 addrLo = bus.read(operand);
-                addrHi = bus.read(operand + 1);
-                return (addrLo + addrHi * 0x100 + Y) & 0xFFFF;
+                addrHi = bus.read((operand + 1) & 0xFF);
+                return indexed(addrLo + addrHi * 0x100, Y);
             case ZEROPAGE_INDIRECT:
+                addrLo = bus.read(operand);
+                addrHi = bus.read((operand + 1) & 0xFF);
+                return addrLo + addrHi * 0x100;
             case INDIRECT:
                 addrLo = bus.read(operand);
-                addrHi = bus.read(operand + 1);
-                return (addrLo + addrHi * 0x100) & 0xFFFF;
+                addrHi = bus.read((operand + 1) & 0xFFFF);
+                return addrLo + addrHi * 0x100;
             default:
                 assert false : "Invalid addressing mode " + addrMode;
                 return -1;
         }
+    }
+
+    private int indexed(int base, int index) {
+        int addr = (base + index) & 0xFFFF;
+        pageCrossed = (addr & 0xFF00) != (base & 0xFF00);
+        return addr;
     }
 
     private int getLoadVal(AddressingMode addrMode) {
@@ -2285,7 +2533,16 @@ public class CPU {
             return bus.read(PC);
         }
 
-        return bus.read(getOperandAddress(addrMode));
+        int addr = getOperandAddress(addrMode);
+        if (pageCrossed) extraCycles++;
+        return bus.read(addr);
+    }
+
+    /** Address for a read-modify-write shift/rotate: on the 65C02, abs,X only takes the extra cycle on a page cross */
+    private int getShiftAddress(AddressingMode addrMode) {
+        int addr = getOperandAddress(addrMode);
+        if (pageCrossed) extraCycles++;
+        return addr;
     }
 
     private int getP() {
@@ -2324,6 +2581,7 @@ public class CPU {
 
         PC = vectorHi * 0x100 + vectorLo;
         I = true;
+        D = false;
     }
 
     public String getLastInstructionMnemonic() {

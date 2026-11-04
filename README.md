@@ -6,7 +6,7 @@ For more info on the KiT, see https://www.kirantomlinson.com/category/6502/.
 ## Emulator architecture
 
 The main file is `KiT.java`, which creates all of the componenets, runs the main loop, and initializes the GUI and keyboard input. Each major component of the KiT is modeled with its own class:
-- `CPU.java`: the heart of the KiT, a 65C02 emulator (all 6502 instructions supported, some 65C02 instructions missing for now).
+- `CPU.java`: the heart of the KiT, a cycle-counted WDC 65C02 emulator: every opcode (including RMB/SMB/BBR/BBS, TSB/TRB, WAI/STP and the 65C02 undefined-opcode NOPs), decimal mode, and page-crossing/branch/decimal cycle penalties.
 - `Bus.java`: the glue tying components together. Includes the address and data buses, the interrupt line, and the R/W signal. Whenever components need to talk to each other, it happens through the bus. 
 - `AddressDecoder.java`: activates components that listen to the bus whenever their address range is selected
 - `RAM.java`: emulates the RAM chip. Reads and writes happen through the bus.
@@ -22,6 +22,17 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 From the repository root, run `javac *.java` and `java KiT`. The emulator loads `video_mon.bin` and reads and saves `ssd.bin` in that directory. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
 Select Realtime to run at 1.8432 MHz or Turbo to run as fast as possible. Headless mode uses Turbo automatically.
+
+### CPU tests
+
+From the repository root, run:
+
+```
+javac -d test/build *.java test/CPUTest.java
+java -cp test/build CPUTest
+```
+
+This runs Klaus Dormann's [6502 functional test and 65C02 extended opcodes test](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-licensed, so they're downloaded to 	est/bin/ on first run instead of being committed), Bruce Clark's 65C02 decimal mode test (	est/65C02_decimal_test.bin), and checks for cycle counts, IRQ, reset, WAI and STP.
 
 ### Local configuration
 
