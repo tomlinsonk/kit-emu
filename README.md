@@ -19,7 +19,17 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `ssd.bin`: the binary contents of the SSD, loaded on start and saved on exit
 
 ## Instructions
-From the repository root, run `javac *.java` and `java KiT`. The emulator loads `video_mon.bin` and reads and saves `ssd.bin` in that directory. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
+You'll need a JDK and `make`. From the repository root:
+
+```sh
+make           # compile into build/classes
+make run       # compile and start the emulator
+make clean     # remove compiled files, including any beside the sources
+```
+
+Pass emulator options with `ARGS`, for example `make run ARGS="--no-sound --no-save-ssd"`.
+
+The emulator loads `video_mon.bin` and reads and saves `ssd.bin` in the repository root. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
 Select Realtime to run at 1.8432 MHz or Turbo to run as fast as possible. Headless mode uses Turbo automatically.
 
@@ -28,8 +38,7 @@ Select Realtime to run at 1.8432 MHz or Turbo to run as fast as possible. Headle
 From the repository root, run:
 
 ```
-javac -d test/build *.java test/CPUTest.java
-java -cp test/build CPUTest
+make test
 ```
 
 This runs Klaus Dormann's [6502 functional test and 65C02 extended opcodes test](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-licensed, included as the `test/klaus` git submodule, so clone with `--recursive` or run `git submodule update --init`), Bruce Clark's 65C02 decimal mode test (`test/65C02_decimal_test.bin`), and checks for cycle counts, IRQ, reset, WAI and STP.
@@ -46,7 +55,7 @@ fileChooserDir=/path/to/programs
 ### Headless mode
 I added a headless mode to run the emulator with no GUI, so I could test my C compiler :)
 
-Run `java -Djava.awt.headless=true KiT --headless --prg [.prg file]`. Headless mode loads the `.prg` file over the UART, types `l\nr\n` into the monitor to load and run that program until the program hits the emulator breakpoint instruction (`0xBB`). It then prints the CPU status and the screen text and exits with status 0.
+Run `make`, then `java -cp build/classes -Djava.awt.headless=true KiT --headless --prg path/to/file.prg`. Headless mode loads the `.prg` file over the UART, types `l\nr\n` into the monitor to load and run that program until the program hits the emulator breakpoint instruction (`0xBB`). It then prints the CPU status and the screen text and exits with status 0.
 
 Options:
 - `--prg path/to/file.prg`: program to load (overrides `defaultProgram` in `kit-emu.properties`)

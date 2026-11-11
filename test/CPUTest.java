@@ -8,8 +8,7 @@ import java.nio.file.Paths;
  * decimal mode test (65C02 config, checks A, N, V, Z and C), and cycle counts.
  *
  * From the repository root:
- *   javac -d test/build *.java test/CPUTest.java
- *   java -cp test/build CPUTest
+ *   make test
  *
  * Klaus Dormann's binaries (GPL-3.0) come from the test/klaus git submodule:
  *   git submodule update --init
