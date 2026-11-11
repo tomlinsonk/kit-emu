@@ -2,3 +2,4 @@
 *.class
 .vscode/
 kit-emu.properties
+test/build/
