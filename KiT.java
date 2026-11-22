@@ -265,6 +265,7 @@ public class KiT extends JPanel {
         bus = new Bus();
         cpu = new CPU(bus);
         ram = new RAM(bus, RAM_START, RAM_END);
+        setFocusTraversalKeysEnabled(false);
         rom = new ROM(bus, ROM_HIDDEN_START, ROM_END);
         via1 = new VIA(bus, VIA1_START, VIA1_END);
         via2 = new VIA(bus, VIA2_START, VIA2_END);
