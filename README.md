@@ -15,7 +15,7 @@ The main file is `KiT.java`, which creates all of the componenets, runs the main
 - `VIA.java`: emulates the 65C22 VIA chip. Can request interrupts.
 - `SSD.java`: emulates a 256 Kb SSD using the SST39SF020A flash chip
 - `SID.java`: emulates the SID sound chip (6581 by default), clocked at 1.8432 MHz like the KiT's, so notes play at the same pitch as on the hardware. Plays through your computer's audio output.
-- `video_mon.bin`: the monitor ROM image, loaded on start
+- `kit_os.bin`: the kit-os ROM image, loaded on start
 - `ssd.bin`: the binary contents of the SSD, loaded on start and saved on exit
 
 ## Instructions
@@ -29,7 +29,7 @@ make clean     # remove compiled files, including any beside the sources
 
 Pass emulator options with `ARGS`, for example `make run ARGS="--no-sound --no-save-ssd"`.
 
-The emulator loads `video_mon.bin` and reads and saves `ssd.bin` in the repository root. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
+The emulator loads `kit_os.bin` and reads and saves `ssd.bin` in the repository root. See my [KiT Code](https://github.com/tomlinsonk/kit-6502-code) repo for programs that you can load over the emulated serial port. (Note: they need to be assembled with KickAssembler.)
 
 Select Realtime to run at 1.8432 MHz or Turbo to run as fast as possible. Headless mode uses Turbo automatically.
 

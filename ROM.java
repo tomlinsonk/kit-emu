@@ -16,7 +16,7 @@ public class ROM implements BusListener {
 
         byte[] romData;
         try {
-            romData = Files.readAllBytes(Paths.get("video_mon.bin"));
+            romData = Files.readAllBytes(Paths.get("kit_os.bin"));
 
             for (int i = 0; i < romData.length; i++) {
                 this.data[i] = romData[i] & 0xFF;

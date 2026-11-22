@@ -50,6 +50,10 @@ public class KiT extends JPanel {
     private final static int UART_START = 0x7A00;
     private final static int UART_END = 0x7AFF;
 
+    // Slots 3 and 4 (no cards emulated)
+    private final static int EMPTY_SLOTS_START = 0x7C00;
+    private final static int EMPTY_SLOTS_END = 0x7DFF;
+
     private final static int SID_START = 0x7E00;
     private final static int SID_END = 0x7EFF;
 
@@ -261,11 +265,11 @@ public class KiT extends JPanel {
 
 		addKeyListener(listener);
 		setFocusable(true);
+        setFocusTraversalKeysEnabled(false);
 
         bus = new Bus();
         cpu = new CPU(bus);
         ram = new RAM(bus, RAM_START, RAM_END);
-        setFocusTraversalKeysEnabled(false);
         rom = new ROM(bus, ROM_HIDDEN_START, ROM_END);
         via1 = new VIA(bus, VIA1_START, VIA1_END);
         via2 = new VIA(bus, VIA2_START, VIA2_END);
@@ -286,6 +290,7 @@ public class KiT extends JPanel {
         addrDecoder.addDevice(uart, UART_START, UART_END);
         addrDecoder.addDevice(sid, SID_START, SID_END);
         addrDecoder.addDevice(ssd, SSD_START, SSD_END);
+        addrDecoder.addDevice(new OpenBus(bus), EMPTY_SLOTS_START, EMPTY_SLOTS_END);
 
         bus.setAddressDecoder(addrDecoder);
         bus.addInterrupter(via1);
