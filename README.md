@@ -68,7 +68,7 @@ Options:
 
 ### Sound
 
-I made a sound card for the KiT a while back and assumed it would be hardware-only, since emulating a SID seemed beyond my ability and knowledge. Realistically, it would never have happened. So... I asked Claude Opus to do it. Behold, `SID.java`. And, while I was at it, I had Claude code up a C64 `.sid` to KiT program converter, along with a music player for the KiT. So now I can listen to Wizball (by [Martin Galway(https://en.wikipedia.org/wiki/Martin_Galway)) and Monty on the Run (by [Rob Hubbard](https://en.wikipedia.org/wiki/Martin_Galway)) on the KiT, and the KiT emulator. Incredible. 
+I made a sound card for the KiT a while back and assumed it would be hardware-only, since emulating a SID seemed beyond my ability and knowledge. Realistically, it would never have happened. So... I asked Claude Opus to do it. Behold, `SID.java`. And, while I was at it, I had Claude code up a C64 `.sid` to KiT program converter, along with a music player for the KiT. So now I can listen to Wizball (by [Martin Galway](https://en.wikipedia.org/wiki/Martin_Galway)) and Monty on the Run (by [Rob Hubbard](https://en.wikipedia.org/wiki/Martin_Galway)) on the KiT, and the KiT emulator. Incredible. 
 
 To try it out, run `F10` to run the SID-play program, select a tune with up and down arrow, and play with enter.
 
